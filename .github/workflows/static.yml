@@ -51,11 +51,10 @@ jobs:
           test -f _site/js/vendor/mermaid.min.js
           test -f _site/js/vendor/fonts/KaTeX_Main-Regular.woff2
 
-      # enablement turns Pages on the first time, with GitHub Actions as
-      # the source. Later runs read the existing configuration.
+      # Pages must be on for the repository before this step can run: in the
+      # repository settings, under Pages, the source is "GitHub Actions".
+      # The token of a workflow run cannot turn Pages on. Turn it on once.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
