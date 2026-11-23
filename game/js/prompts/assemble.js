@@ -2,7 +2,7 @@
 // Block order: persona, problem, process, estimation reference, mode,
 // constraint. Returns an array of messages for the provider interface.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=24';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=25';
 
 export const STEPS = [
   'Requirements and constraints',
@@ -29,6 +29,9 @@ step N; emit it once per step. A step is covered when its goal is met: the
 candidate surfaced the key constraints (1), sketched an end-to-end design
 (2), worked through the core components in depth (3), named the main
 bottlenecks (4), or addressed scaling (5).
+[[guidance: N]] - add one line for each hidden guidance item that this reply
+reveals to the candidate, with the number of that item in the problem block.
+Add it for a hint too. Add it only for an item that the reply really states.
 
 Grade every number the candidate volunteers: for any capacity, traffic, or
 storage claim they make, ask how they got the number. Never solicit an
@@ -76,13 +79,13 @@ Evaluate the design within this stack.`;
 
 function problemBlock(problem) {
   const guidance = problem.hidden_guidance
-    .map((g) => `- ${g}`)
+    .map((g, i) => `${i + 1}. ${g}`)
     .join('\n');
   return `Problem: ${problem.vague_prompt}
 
 Hidden guidance (hold back until the candidate asks a question that touches it;
 reveal naturally, one or two items per answer, never all at once, never
-unsolicited):
+unsolicited). The number of an item is the N of its [[guidance: N]] control line:
 ${guidance}`;
 }
 

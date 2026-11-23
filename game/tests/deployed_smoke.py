@@ -75,6 +75,12 @@ def main():
             "() => document.getElementById('send-btn').disabled === false")
         assert page.locator("#timer-hud").is_hidden(), "timer shows with the timer option off"
         d.send("About ten million writes per day, as a ballpark.")
+        # The first hint of the mock script reveals hidden guidance item 2.
+        # The game records it in the ledger and shows no control line.
+        d.send("I am stuck, please give me a hint.")
+        assert d.stored_session()["ledger"]["revealedGuidance"] == [2], \
+            "a hint that reveals guidance did not reach the ledger"
+        assert "[[" not in page.locator("#chat-log").inner_text()
         page.click("#tab-btn-latex")
         page.fill("#artifact-source", "QPS = 1160")
         page.wait_for_selector("#artifact-preview .katex")

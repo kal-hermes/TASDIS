@@ -1,10 +1,10 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=24';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=24';
-import { initExport } from './export.js?v=24';
-import { initSubmission } from './submission.js?v=24';
-import { loadProblems } from './problems.js?v=24';
+import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=25';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=25';
+import { initExport } from './export.js?v=25';
+import { initSubmission } from './submission.js?v=25';
+import { loadProblems } from './problems.js?v=25';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -121,7 +121,7 @@ function openHowTo() {
   const dialog = el('howto-dialog');
   el('howto-skip').checked = !howToAtStart();
   dialog.showModal();
-  dialog.scrollTop = 0;
+  el('howto-body').scrollTop = 0;
   el('howto-title').focus();
 }
 

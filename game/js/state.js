@@ -94,11 +94,19 @@ export function setCurrentStep(session, n) {
   if (n >= 1 && n <= 5) session.currentStep = n;
 }
 
+function guidanceCount(session) {
+  const items = session.problem && session.problem.hidden_guidance;
+  return Array.isArray(items) ? items.length : 0;
+}
+
+// The numbers are 1-based, like the numbers of the problem block. A number
+// outside the list of the problem is a mistake of the model: the game drops it.
 export function revealGuidance(session, indices) {
+  const count = guidanceCount(session);
+  const revealed = session.ledger.revealedGuidance;
+  const valid = (i) => Number.isInteger(i) && i >= 1 && i <= count && !revealed.includes(i);
   for (const i of indices) {
-    if (!session.ledger.revealedGuidance.includes(i)) {
-      session.ledger.revealedGuidance.push(i);
-    }
+    if (valid(i)) revealed.push(i);
   }
 }
 

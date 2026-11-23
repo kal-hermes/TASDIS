@@ -6,15 +6,15 @@
 
 import {
   loadSession, saveSession, newSession,
-  addMessage, addArtifact, coverStep, setCurrentStep,
+  addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   allStepsCovered,
-} from './state.js?v=24';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=24';
-import { assembleContext, compressIfNeeded } from './context.js?v=24';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=24';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=24';
-import { renderLatex } from './render-latex.js?v=24';
-import { renderMermaid } from './render-mermaid.js?v=24';
+} from './state.js?v=25';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=25';
+import { assembleContext, compressIfNeeded } from './context.js?v=25';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=25';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=25';
+import { renderLatex } from './render-latex.js?v=25';
+import { renderMermaid } from './render-mermaid.js?v=25';
 
 let session = null;
 let busy = false;
@@ -25,19 +25,29 @@ let tickInterval = null;
 
 const STEP_RE = /\[\[step:\s*([1-5])\]\]/g;
 const COVERED_RE = /\[\[covered:\s*([1-5])\]\]/g;
+const GUIDANCE_RE = /\[\[guidance:\s*(\d+)\]\]/g;
+// Every control line leaves the text, also one with a value out of range:
+// the candidate never sees a line of the protocol.
+const CONTROL_LINE_RE = /\[\[(?:step|covered|guidance):[^\]\n]*\]\]/g;
 
-function parseControlLines(text) {
+// The interviewer ends a reply with control lines. The game reads them and
+// shows the rest. A value out of range changes nothing: a step stays as it
+// was, and revealGuidance checks a guidance number against the problem.
+export function parseControlLines(text) {
   const covered = [];
+  const guidance = [];
   let m;
+  COVERED_RE.lastIndex = 0;
   while ((m = COVERED_RE.exec(text)) !== null) covered.push(Number(m[1]));
+  GUIDANCE_RE.lastIndex = 0;
+  while ((m = GUIDANCE_RE.exec(text)) !== null) guidance.push(Number(m[1]));
   STEP_RE.lastIndex = 0;
   let step = null;
   while ((m = STEP_RE.exec(text)) !== null) step = Number(m[1]);
-  const clean = text
-    .replace(/\[\[(step|covered):\s*[1-5]\]\]/g, '')
+  const clean = text.replace(CONTROL_LINE_RE, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  return { clean, step, covered };
+  return { clean, step, covered, guidance };
 }
 
 // ---- DOM helpers -----------------------------------------------------
@@ -250,7 +260,7 @@ async function runLlmTurn({ purpose, helpRequest }) {
       streamEl.textContent += chunk;
       streamEl.scrollIntoView({ behavior: 'auto', block: 'end' });
     }, options);
-    const { clean, step, covered } = parseControlLines(raw);
+    const { clean, step, covered, guidance } = parseControlLines(raw);
     streamEl.textContent = clean;
     addMessage(session, 'interviewer', clean, {
       step: step || session.currentStep,
@@ -258,6 +268,7 @@ async function runLlmTurn({ purpose, helpRequest }) {
     });
     if (step) setCurrentStep(session, step);
     for (const c of covered) coverStep(session, c);
+    revealGuidance(session, guidance);
     if (purpose !== 'help') helpStage = 0;
   } catch (err) {
     ok = false;

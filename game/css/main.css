@@ -204,6 +204,17 @@ header {
 .doc-dialog {
   width: min(44rem, 92vw);
   max-height: 88vh;
+}
+
+/* An open dialog is a column: the text that scrolls, then the last row.
+   The last row stays visible, so it is the sign that the text continues. */
+.doc-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-dialog .doc-body {
+  min-height: 0;  /* a child of a column scrolls only with this */
   overflow: auto;
 }
 
@@ -220,13 +231,15 @@ header {
    control, so it shows no focus ring. */
 .doc-dialog h2:focus { outline: none; }
 
-/* The last row of the dialog: a check box, then Close. */
+/* The last row of the dialog: a check box, then Close. It never shrinks.
+   A gap, then a line: the gap keeps the cut line of the text off the row. */
 .doc-dialog menu {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin: 0;
+  margin: 0.4rem 0 0;
   padding: 0.75rem 0 0;
   border-top: 1px solid #ccc;
 }

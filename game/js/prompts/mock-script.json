@@ -26,7 +26,7 @@
   ],
   "help": {
     "ladder": [
-      "Mock interviewer: Hint: read traffic dwarfs write traffic here by two orders of magnitude. What does that suggest?",
+      "Mock interviewer: Hint: read traffic dwarfs write traffic here by two orders of magnitude. What does that suggest?\n\n[[guidance: 2]]",
       "Mock interviewer: Fuller answer: because reads dominate, put a cache in front of the key-value store and serve redirects mostly from it.",
       "Mock interviewer: Walkthrough: a redirect request hits a load balancer, then a stateless redirect service, then the cache, then the KV store; the write path goes through an encoder service with a counter or hash plus collision check."
     ],

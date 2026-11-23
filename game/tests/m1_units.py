@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=24');
-              const context = await import('./js/context.js?v=24');
-              const assemble = await import('./js/prompts/assemble.js?v=24');
+              const state = await import('./js/state.js?v=25');
+              const context = await import('./js/context.js?v=25');
+              const assemble = await import('./js/prompts/assemble.js?v=25');
               const out = {};
 
               const problem = {
@@ -137,7 +137,7 @@ def main():
                 "newSession": {"state": "MENU", "ledgerKeys": "components,estimates,openThreads,revealedGuidance", "helpMode": "testing", "proactiveHints": False, "showTracker": True},
                 "ledger": {"estimates": 1, "components": 1, "transcriptArtifacts": 2},
                 "coverage": "1,3",
-                "guidance": "1,0",
+                "guidance": "1",
                 "currentStep": 1,
                 "prompt": {"messages": 1, "hasPersona": True, "hasVague": True, "hasHidden": True,
                            "hasEstimation": True, "hasTestingRefusal": True, "hasPinned": True,

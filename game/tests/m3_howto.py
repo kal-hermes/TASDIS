@@ -27,18 +27,26 @@ BOX = "#howto-skip"
 # Where the dialog is and what it shows.
 STATE = """() => {
   const dialog = document.getElementById('howto-dialog');
+  const scroller = document.getElementById('howto-body');
   const title = document.getElementById('howto-title');
   const box = document.getElementById('howto-skip');
+  const close = document.getElementById('howto-close');
   const d = dialog.getBoundingClientRect();
   const t = title.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  const c = close.getBoundingClientRect();
+  const inside = (r) => r.top >= d.top - 1 && r.bottom <= d.bottom + 1
+    && r.left >= d.left - 1 && r.right <= d.right + 1;
   return {
     open: dialog.open,
     modal: dialog.matches(':modal'),
-    scrollTop: Math.round(dialog.scrollTop),
-    scrollHeight: dialog.scrollHeight,
-    clientHeight: dialog.clientHeight,
+    scrollTop: Math.round(scroller.scrollTop),
+    scrollHeight: scroller.scrollHeight,
+    clientHeight: scroller.clientHeight,
     focus: document.activeElement ? document.activeElement.id : '',
-    titleInView: t.top >= d.top - 1 && t.bottom <= d.bottom,
+    titleInView: t.top >= d.top - 1 && t.bottom <= d.bottom + 1,
+    boxInView: inside(b),
+    closeInView: inside(c),
     screen: document.body.dataset.screen,
     boxChecked: box ? box.checked : null,
     boxLabel: box ? box.closest('label').innerText.trim() : null,
@@ -128,6 +136,9 @@ def main():
             assert s["scrollTop"] == 0 and s["titleInView"], \
                 f"how to play does not open at its top: {s}"
             assert s["focus"] == "howto-title", f"the focus is on '{s['focus']}', not on the title"
+            # the last row is visible from the start
+            assert s["boxInView"] and s["closeInView"], \
+                f"the last row is not visible at the top of the dialog: {s}"
             print("  ok   a, b: a first visit opens how to play, at its top, over the menu")
 
             # ---- c. the box is off by default. Close without a tick keeps the start.
@@ -174,9 +185,9 @@ def main():
             print("  ok   f: the box shows the stored choice; an unticked box turns the start on")
 
             # ---- g. a reopen starts at its top again
+            body = "#howto-body"
             page.evaluate(
-                "() => { const d = document.getElementById('howto-dialog');"
-                " d.scrollTop = d.scrollHeight; }")
+                "sel => { document.querySelector(sel).scrollTop = 1e6; }", body)
             assert state(page)["scrollTop"] > 0, "the dialog did not scroll to its end"
             page.click("#howto-close")
             open_from_settings(page)
@@ -186,6 +197,29 @@ def main():
             page.keyboard.press("Escape")  # how to play
             page.keyboard.press("Escape")  # Settings
             print("  ok   g: a reopen starts at the top, with the title focused")
+
+            # ---- k. the last row stays visible while the text scrolls
+            open_from_settings(page)
+            page.evaluate(
+                "sel => { const b = document.querySelector(sel);"
+                " b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }", body)
+            s = state(page)
+            assert 0 < s["scrollTop"] < s["scrollHeight"] - s["clientHeight"], \
+                f"the text did not scroll to its middle: {s}"
+            assert s["boxInView"] and s["closeInView"], f"the last row left the view: {s}"
+            page.evaluate("sel => { document.querySelector(sel).scrollTop = 1e6; }", body)
+            s = state(page)
+            assert s["scrollTop"] > 0 and s["boxInView"] and s["closeInView"], \
+                f"the last row left the view at the end: {s}"
+            # The keyboard scrolls the text: the title has the focus and sits
+            # inside the text.
+            page.evaluate("sel => { document.querySelector(sel).scrollTop = 0; }", body)
+            page.keyboard.press("PageDown")
+            page.wait_for_function("sel => document.querySelector(sel).scrollTop > 0",
+                                   arg=body, timeout=5000)
+            page.keyboard.press("Escape")  # how to play
+            page.keyboard.press("Escape")  # Settings
+            print("  ok   k: the last row stays visible while the text scrolls, by wheel or by key")
 
             # ---- h. Escape remembers the box too
             open_from_settings(page)
