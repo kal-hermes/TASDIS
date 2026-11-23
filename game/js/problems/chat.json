@@ -1,0 +1,29 @@
+{
+  "id": "chat",
+  "title": "Chat Application",
+  "vague_prompt": "Design a chat application like WhatsApp.",
+  "hidden_guidance": [
+    "500 million DAU, and 50 billion messages per day",
+    "One to one chats and group chats with up to 500 members",
+    "Message delivery latency under 500 ms at p95 when both users are online",
+    "Messages must arrive in order within a conversation and must not be lost",
+    "An offline user gets a push notification within 60 seconds and a sync of missed messages on reconnect",
+    "Read receipts and typing indicators are required"
+  ],
+  "known_patterns": [
+    "WebSocket or another persistent connection through a gateway, with a session registry that maps a user to a gateway node",
+    "Message queue for delivery fanout",
+    "Message store keyed by conversation with a sequence number",
+    "Delivery and read receipts as separate small messages",
+    "Presence service and offline push through APNs and FCM",
+    "End to end encryption note for message content"
+  ],
+  "common_misses": [
+    "Ordering and sequence numbers inside a conversation",
+    "Reconnect sync with a cursor and a gap fill",
+    "Fanout to multiple devices of one user",
+    "Group membership change history",
+    "Presence tracking at scale and its write load"
+  ],
+  "constrained_variant": "AWS, Cassandra, Kafka, API Gateway WebSocket"
+}

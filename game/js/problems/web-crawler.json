@@ -1,0 +1,29 @@
+{
+  "id": "web-crawler",
+  "title": "Web Crawler",
+  "vague_prompt": "Design a web crawler for a search engine.",
+  "hidden_guidance": [
+    "Crawl 1 billion pages per month, about 400 pages per second on average",
+    "Politeness: at most one request per second to one host",
+    "Re-crawl popular pages every 24 hours and the rest every 30 days",
+    "The crawler must obey robots.txt for every host and the site terms of record",
+    "About 30 percent of fetched pages are near-duplicates of another page",
+    "The frontier must survive a worker crash without losing a queued URL"
+  ],
+  "known_patterns": [
+    "Frontier queue with priority by freshness and page importance",
+    "Per host politeness delay and a host level queue",
+    "robots.txt fetch and cache per host",
+    "Dedup with a Bloom filter on the URL and a content hash on the page",
+    "DNS cache to cut lookup cost",
+    "Distributed worker pool with a durable frontier store"
+  ],
+  "common_misses": [
+    "Crawler traps and infinite URL spaces",
+    "robots.txt cache expiry and crawl-delay parsing",
+    "One slow host blocking a shared queue",
+    "Near-duplicate detection with a simhash or shingle set",
+    "Re-crawl schedule and URL freshness score"
+  ],
+  "constrained_variant": "AWS, S3, SQS, DynamoDB"
+}

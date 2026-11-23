@@ -1,0 +1,77 @@
+{
+  "test_connection": "Mock provider connection ok",
+  "briefing": "Mock interviewer: Hi, thanks for joining. Today we will design a URL shortening service, like bit.ly. Where would you like to start?\n\n[[step: 1]]",
+  "interview": [
+    {
+      "text": "Mock interviewer: Good start. Before we draw anything: how many users do we expect, and how many redirects per short link? Ask me for any number you need.\n\n[[step: 1]]\n[[covered: 1]]"
+    },
+    {
+      "text": "Mock interviewer: Those numbers work. Give me a rough QPS estimate from them, and the storage per year. Feel free to round aggressively.\n\n[[step: 1]]"
+    },
+    {
+      "text": "Mock interviewer: About right, and I accept the rounding. Now sketch the high-level design: what sits between the user and the database?\n\n[[step: 2]]\n[[covered: 2]]"
+    },
+    {
+      "text": "Mock interviewer: Clean sketch. Which piece is the hardest to get right at this scale? Walk me through its internals.\n\n[[step: 3]]\n[[covered: 3]]"
+    },
+    {
+      "text": "Mock interviewer: Solid internals. What breaks first when traffic spikes tenfold? Name the bottlenecks.\n\n[[step: 4]]\n[[covered: 4]]"
+    },
+    {
+      "text": "Mock interviewer: Good. Last part: how does this scale past one datacenter? Think data partitioning and availability.\n\n[[step: 5]]\n[[covered: 5]]"
+    },
+    {
+      "text": "Mock interviewer: That covers the five steps. We can go deeper on any part, or you can ask to wrap up.\n\n[[step: 5]]"
+    }
+  ],
+  "help": {
+    "ladder": [
+      "Mock interviewer: Hint: read traffic dwarfs write traffic here by two orders of magnitude. What does that suggest?",
+      "Mock interviewer: Fuller answer: because reads dominate, put a cache in front of the key-value store and serve redirects mostly from it.",
+      "Mock interviewer: Walkthrough: a redirect request hits a load balancer, then a stateless redirect service, then the cache, then the KV store; the write path goes through an encoder service with a counter or hash plus collision check."
+    ],
+    "refusal": "Mock interviewer: In testing mode I hold back hints. Try the numbers yourself and tell me what you get."
+  },
+  "wrapup": "Mock interviewer: Time is up, thank you. That is a wrap on the exercise; the grade will follow shortly.\n\n[[step: 5]]",
+  "grade": {
+    "process_coverage": [1, 2, 3, 4, 5],
+    "rows": [
+      {"name": "requirements", "pass": true, "fix": ""},
+      {"name": "estimation", "pass": true, "fix": ""},
+      {"name": "redundancy", "pass": false, "fix": "Add a replica for the KV store and a load balancer pair; single instances are points of failure."},
+      {"name": "database-scaling", "pass": true, "fix": ""},
+      {"name": "caching", "pass": true, "fix": ""},
+      {"name": "queues", "pass": false, "fix": "Move the alias-creation analytics path behind a queue so the write path stays thin."},
+      {"name": "monitoring", "pass": false, "fix": "Define redirect latency and cache hit ratio metrics with alert thresholds."},
+      {"name": "deployment", "pass": true, "fix": ""}
+    ],
+    "realism": [
+      {"claim": "~5,800 read QPS", "verdict": "pass", "note": "Matches 100M DAU x 5 redirects / 86,400, within one order of magnitude."},
+      {"claim": "11 TB over 10 years", "verdict": "pass", "note": "Matches 10M records/day at ~300 bytes, friendly rounding accepted."}
+    ],
+    "missing": [
+      "Cache TTL was never stated for the redirect cache.",
+      "No discussion of hot key (popular alias) mitigation."
+    ],
+    "artifact_comments": [
+      {"artifact_id": "SCRIPT", "comment": "The diagram is clean; label the cache as cache-aside and add the replica."}
+    ],
+    "closing": "Mock interviewer: Thanks, that is a solid pass with a few operational gaps. Good luck out there."
+  },
+  "summarize": {
+    "narrative": "The candidate asked about scale. The interviewer answered 100 million reads per day. The candidate chose one database and a read cache in front of it.",
+    "decisions": ["One primary database", "A read cache in front of the database"],
+    "estimates": ["About 1157 reads per second, from 100 million reads per day"],
+    "open_threads": ["How the cache is invalidated"]
+  },
+  "grade_bad": "I thought the design was quite good overall, though the caching story was thin.",
+  "midgrade": {
+    "solid_steps": [1],
+    "passing_rows": ["requirements"],
+    "obvious_gaps": [
+      "No estimates yet: QPS and storage are still guesses.",
+      "The high-level sketch has not been drawn."
+    ],
+    "note": "This is a progress check only: the interview is still open."
+  }
+}

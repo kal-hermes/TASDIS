@@ -1,0 +1,29 @@
+{
+  "id": "rate-limiter",
+  "title": "API Rate Limiter",
+  "vague_prompt": "Design a rate limiter for a public API.",
+  "hidden_guidance": [
+    "10 million requests per second at peak across the fleet",
+    "The limit is per API key and per endpoint, for example 1000 requests per minute per key",
+    "The limiter must add under 5 ms to each request at p99",
+    "A small overshoot is acceptable, but a client must never exceed 110 percent of its limit",
+    "A rejected request gets HTTP 429 with a Retry-After header and the remaining quota headers",
+    "Rule changes from the platform team must reach every node within 30 seconds"
+  ],
+  "known_patterns": [
+    "Token bucket or sliding window counter per key and endpoint",
+    "Central counters in Redis with an atomic increment or Lua script",
+    "Local bucket per node with periodic sync to cut the round trip",
+    "429 response with Retry-After and quota headers",
+    "Rule configuration service that pushes limits to all nodes",
+    "A stated fail-open or fail-closed choice when the counter store is down"
+  ],
+  "common_misses": [
+    "Clock skew between nodes that share a window",
+    "Race between the read and the increment on the counter",
+    "Cost weighting for expensive endpoints",
+    "Hot key on one large tenant in Redis",
+    "Limiter behavior during a Redis outage"
+  ],
+  "constrained_variant": "GCP, Redis, Envoy"
+}

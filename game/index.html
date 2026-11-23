@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Totally Accurate System Design Interview Simulator</title>
+  <link rel="stylesheet" href="js/vendor/katex.min.css?v=1">
+  <link rel="stylesheet" href="css/main.css?v=22">
+</head>
+<body data-screen="menu">
+  <header>
+    <h1>Totally Accurate System Design Interview Simulator</h1>
+    <nav id="screen-nav">
+      <button type="button" data-nav="menu">Menu</button>
+      <button type="button" data-nav="briefing">Briefing</button>
+      <button type="button" data-nav="interview">Interview</button>
+      <button type="button" data-nav="grading">Grading</button>
+      <button type="button" data-nav="feedback">Feedback</button>
+      <button type="button" id="open-settings">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="screen-menu" data-screen-name="menu">
+      <h2>Menu</h2>
+      <label>Problem
+        <select id="problem-select"></select>
+      </label>
+      <label><input type="checkbox" id="problem-random"> Random problem</label>
+      <label>Help mode
+        <select id="help-mode">
+          <option value="learning">Learning (hints on request)</option>
+          <option value="testing">Testing (no help)</option>
+        </select>
+      </label>
+      <label>Constraints
+        <select id="constraint-mode">
+          <option value="unconstrained">Unconstrained</option>
+          <option value="constrained">Constrained (pinned stack)</option>
+        </select>
+      </label>
+      <label>Proactive guidance (learning mode only)
+        <select id="proactive-guidance">
+          <option value="off">Off (default)</option>
+          <option value="on">On (may point at unexplored areas)</option>
+        </select>
+      </label>
+      <label>Timer
+        <select id="timer-preset">
+          <option value="0">Off</option>
+          <option value="15">15 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="45">45 minutes</option>
+          <option value="60">60 minutes</option>
+        </select>
+      </label>
+      <button type="button" id="start-interview">Start interview</button>
+      <button type="button" id="open-howto">How to play</button>
+      <p id="menu-status" role="status"></p>
+    </section>
+
+    <section id="screen-briefing" data-screen-name="briefing" hidden>
+      <h2>Briefing</h2>
+      <p>The interviewer is preparing the room. The problem statement
+         appears in the chat view next.</p>
+      <p id="briefing-status" role="status"></p>
+      <button type="button" id="briefing-retry" hidden>Retry</button>
+    </section>
+
+    <section id="screen-interview" data-screen-name="interview" hidden>
+      <h2>Interview</h2>
+      <div id="interview-layout">
+        <aside id="sidebar">
+          <div id="tracker-block">
+            <h3>Process steps</h3>
+            <ol id="step-tracker"></ol>
+          </div>
+          <button type="button" id="toggle-tracker" hidden></button>
+          <div id="timer-hud" hidden></div>
+          <button type="button" id="request-midgrade" hidden></button>
+          <div id="midgrade-status" role="status"></div>
+          <div id="engine-status" role="status"></div>
+          <ul id="midgrade-snapshots"></ul>
+          <button type="button" id="end-interview-btn" hidden>Agree to end</button>
+          <button type="button" id="export-transcript">Export transcript (.md)</button>
+        </aside>
+        <div id="chat-pane">
+          <div id="chat-log" aria-live="polite"></div>
+          <div id="interview-busy" hidden role="status">The interviewer is responding...</div>
+          <div id="input-row">
+            <input id="candidate-input" type="text"
+                   placeholder="Type your answer, or ask for hidden constraints...">
+            <button type="button" id="send-btn">Send</button>
+          </div>
+          <div id="submission-panel">
+            <div id="submission-tabs">
+              <button type="button" id="tab-btn-latex" class="active">LaTeX</button>
+              <button type="button" id="tab-btn-mermaid">Mermaid</button>
+              <button type="button" id="tab-btn-prose">Prose</button>
+            </div>
+            <textarea id="artifact-source" rows="6"
+                      placeholder="Type LaTeX, Mermaid source, or prose."></textarea>
+            <div id="artifact-preview"></div>
+            <button type="button" id="artifact-submit">Submit artifact</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-grading" data-screen-name="grading" hidden>
+      <h2>Grading</h2>
+      <p id="grading-status">Grading your interview...</p>
+      <button type="button" id="grading-retry" hidden>Retry grading</button>
+    </section>
+
+    <section id="screen-feedback" data-screen-name="feedback" hidden>
+      <h2>Feedback</h2>
+      <button type="button" id="export-feedback">Export transcript (.md)</button>
+      <p id="feedback-score" class="feedback-score"></p>
+      <p id="feedback-coverage"></p>
+      <h3>Quick Diagnostic rows</h3>
+      <table id="feedback-rows">
+        <thead><tr><th>Row</th><th>Verdict</th><th>Fix</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <h3>Estimation realism</h3>
+      <ul id="feedback-realism"></ul>
+      <h3>Missed items</h3>
+      <ul id="feedback-missing"></ul>
+      <h3>Artifact comments</h3>
+      <ul id="feedback-artifacts"></ul>
+      <h3>Interviewer closing</h3>
+      <blockquote id="feedback-closing"></blockquote>
+    </section>
+  </main>
+
+  <dialog id="settings-dialog">
+    <h2>Settings</h2>
+    <form id="settings-form" method="dialog">
+      <table id="provider-rows">
+        <thead>
+          <tr><th>Role</th><th>Provider</th><th>Base URL</th><th>Model</th><th>API key</th><th></th></tr>
+        </thead>
+        <tbody><!-- provider rows rendered by js/settings.js --></tbody>
+      </table>
+      <label>Context window of the text model (tokens)
+        <input id="context-tokens" type="number" min="0" step="1000" placeholder="32000">
+      </label>
+      <div id="settings-message" role="status"></div>
+      <menu>
+        <button type="button" id="settings-save">Save</button>
+        <button type="button" id="settings-close">Close</button>
+        <button type="button" id="open-howto-settings">How to play</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="howto-dialog" class="doc-dialog" aria-labelledby="howto-title">
+    <h2 id="howto-title">How to play</h2>
+
+    <section>
+      <h3>1. Set up a model</h3>
+      <p>Open Settings. The table has three rows: text, vision, and image.</p>
+      <p>The text row is the only row that the game uses now. Its model plays
+         the interviewer and writes the grade. Select a provider, then type the
+         model name and your API key. Select Test connection to check the row.</p>
+      <p>The vision row will read your handwritten notes from a photo. The
+         image row will draw the interviewer. A later release adds both, so you
+         can leave the two rows empty.</p>
+      <p>The mock provider needs no key and works offline. It gives scripted
+         replies, so you can learn the controls at no cost.</p>
+      <p>The game stores your keys in the local storage of this browser. Local
+         storage is the data store of one site in one browser. The game sends a
+         key only to the provider of its row.</p>
+      <p>The context window field holds the token limit of your text model. A
+         token is a small piece of text that a model reads or writes. In a long
+         interview the game summarizes your older turns when they no longer
+         fit. It uses this number to decide when. Leave the field empty to
+         assume 32000 tokens.</p>
+    </section>
+
+    <section>
+      <h3>2. Choose the options</h3>
+      <dl>
+        <dt>Help mode</dt>
+        <dd>Learning: ask for a hint at any time. Each further request gives a
+            fuller hint, up to a walkthrough. The step tracker lists the five
+            process steps, and you can hide it. Testing: no hints. The
+            interviewer refuses a request, and the step tracker is hidden. Use
+            this mode to measure yourself.</dd>
+        <dt>Constraints</dt>
+        <dd>Unconstrained: choose any technology. Constrained: the interviewer
+            pins a stack, and you design within it.</dd>
+        <dt>Proactive guidance</dt>
+        <dd>Learning mode only. Off is the default: the interviewer answers what
+            you ask and then waits. On: the interviewer can end a reply with one
+            pointer to an area that you did not visit.</dd>
+        <dt>Timer</dt>
+        <dd>Off, or 15, 30, 45, or 60 minutes. The clock runs only on your turn.
+            It pauses while the interviewer responds, during a progress grade,
+            and after a reload. When the time is over, the interview wraps up
+            and is graded.</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h3>3. During the interview</h3>
+      <p>Start with clarifying questions about scale and requirements. Type
+         below the chat and press Enter.</p>
+      <p>Submit your work with the panel under the chat. LaTeX is for
+         estimates, with a live math preview. Mermaid is for diagrams, with a
+         live drawing. Prose is for text. The game attaches each submission to
+         your current step, and the grader reads it.</p>
+      <p>Round your numbers aggressively and show the reasoning. An answer
+         within one order of magnitude passes. An order of magnitude is a
+         factor of ten. False precision counts against you.</p>
+      <p>Agree to end appears when all five steps have evidence. Select it
+         to wrap up and get your grade.</p>
+      <p>In learning mode, Request progress grade gives a progress report. It
+         costs tokens. The clock pauses for the report.</p>
+    </section>
+
+    <section>
+      <h3>4. The grade and the errors</h3>
+      <p>The score is 0 to 10. Eight diagnostic rows make it: each row passes or
+         fails, and a failed row comes with a fix. The feedback also lists the
+         realism of your estimates, the items that you missed, comments on your
+         submissions, and the closing of the interviewer. Steps count by
+         coverage, not by order, so you can go back.</p>
+      <p>If a call to the provider fails, the game shows the reason and a Retry
+         button. The session is saved in this browser, so a reload continues
+         the interview.</p>
+      <p>Select Export transcript to download the interview as a Markdown
+         file: the problem, the options, the full transcript with your
+         submissions, and the grade.</p>
+    </section>
+
+    <menu>
+      <button type="button" id="howto-close">Close</button>
+    </menu>
+  </dialog>
+
+  <script src="js/vendor/katex.min.js?v=1"></script>
+  <script src="js/vendor/mermaid.min.js?v=1"></script>
+  <script type="module" src="js/app.js?v=22"></script>
+</body>
+</html>

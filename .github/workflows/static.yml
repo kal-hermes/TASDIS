@@ -1,0 +1,61 @@
+# Deploys the game to GitHub Pages:
+# https://kal-hermes.github.io/TASDIS/
+#
+# The site lives under a project subpath, so every asset reference in the
+# game must stay relative (js/app.js, not /js/app.js). Only the runtime files
+# are staged: tests, tools, and coverage reports are not published. A new
+# runtime folder needs a line in the staging step and in the trigger paths.
+name: Deploy the game to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - game/index.html
+      - game/css/**
+      - game/js/**
+      - .github/workflows/static.yml
+  workflow_dispatch:
+
+# The checkout reads the repository. Pages needs the other two.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A new push replaces a deploy that still runs. Two deploys never overlap.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the game (runtime files only)
+        run: |
+          mkdir _site
+          cp --recursive game/index.html game/css game/js _site/
+          test -f _site/index.html
+          test -f _site/css/main.css
+          test -f _site/js/app.js
+          test -f _site/js/prompts/mock-script.json
+          test -f _site/js/problems/url-shortener.json
+          test -f _site/js/vendor/katex.min.js
+          test -f _site/js/vendor/katex.min.css
+          test -f _site/js/vendor/mermaid.min.js
+          test -f _site/js/vendor/fonts/KaTeX_Main-Regular.woff2
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

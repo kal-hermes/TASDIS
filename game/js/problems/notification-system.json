@@ -1,0 +1,29 @@
+{
+  "id": "notification-system",
+  "title": "Push Notification System",
+  "vague_prompt": "Design a push notification system that sends millions of messages.",
+  "hidden_guidance": [
+    "200 million notifications per day, with a peak of 20 thousand per second",
+    "Channels are mobile push through APNs and FCM, email, and SMS",
+    "Delivery to the provider must start within 5 seconds of the event at p95",
+    "Each user has per channel and per category preferences plus quiet hours",
+    "A failed send retries up to 5 times with exponential backoff, then goes to a dead letter queue",
+    "The same event must not notify one user twice inside a 24 hour window"
+  ],
+  "known_patterns": [
+    "Event intake queue in front of the fanout service",
+    "Fanout service that checks user preferences before it sends",
+    "One queue per channel with a provider adapter for each",
+    "Retry with exponential backoff and a dead letter queue",
+    "Dedup by event id and user id",
+    "Delivery tracking and provider rate limits"
+  ],
+  "common_misses": [
+    "Idempotency key and dedup window",
+    "Quiet hours computed in the user timezone",
+    "Provider rate limits and expired device tokens",
+    "Backpressure when one provider is slow",
+    "Bounce and unsubscribe handling for email"
+  ],
+  "constrained_variant": "AWS, SNS, SQS, Lambda, DynamoDB"
+}

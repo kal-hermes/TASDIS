@@ -1,0 +1,29 @@
+{
+  "id": "news-feed",
+  "title": "Social News Feed",
+  "vague_prompt": "Design the news feed for a social product.",
+  "hidden_guidance": [
+    "50 million DAU, and each user follows 200 accounts on average",
+    "Read to write ratio about 100 to 1",
+    "The first feed page must load in under 200 ms at p95",
+    "A new post can appear in follower feeds after a few seconds, so strict ordering is not required",
+    "The feed keeps the newest 1000 posts for each user",
+    "Every post can carry images and short video"
+  ],
+  "known_patterns": [
+    "Fanout on write for normal users and fanout on read for accounts with more than 100k followers",
+    "Per user feed cache that holds a list of post IDs",
+    "Ranking service between the cache and the client",
+    "Post store keyed by author with a time ordered index",
+    "CDN for images and video",
+    "Async fanout through a work queue"
+  ],
+  "common_misses": [
+    "Celebrity fanout to millions of followers",
+    "Feed cache memory sizing and eviction",
+    "Deduplication and backfill after a fanout lag",
+    "Delete and edit propagation into cached feeds",
+    "Freshness of the ranking features"
+  ],
+  "constrained_variant": "AWS, ScyllaDB, Kafka, CloudFront"
+}

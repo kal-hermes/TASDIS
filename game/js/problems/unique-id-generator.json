@@ -1,0 +1,29 @@
+{
+  "id": "unique-id-generator",
+  "title": "Distributed Unique ID Generator",
+  "vague_prompt": "Design a unique ID generator for distributed services.",
+  "hidden_guidance": [
+    "10 million IDs per second at peak across all services",
+    "IDs must be unique across data centers and must never be reused",
+    "IDs must be roughly time ordered so that a range scan over a 1 hour window reads few pages",
+    "Generation must not need a network round trip per ID, and a local call must answer in under 1 ms",
+    "Every ID must fit in 64 bits",
+    "The system must tolerate a clock that moves backwards by up to 5 seconds"
+  ],
+  "known_patterns": [
+    "Snowflake style 64 bit layout with timestamp, worker id, and sequence",
+    "Worker id assignment from ZooKeeper or a config service",
+    "Clock skew handling with a wait or a sequence bump",
+    "K-sorted IDs that are ordered within a small window",
+    "No coordination on the hot path, only at node startup",
+    "UUIDv7 as the alternative when 128 bits are acceptable"
+  ],
+  "common_misses": [
+    "Clock rollback after a restart",
+    "Worker id collision when a node restarts with a new address",
+    "Sequence overflow inside one millisecond",
+    "ID bits leaking volume or exact time to clients",
+    "Timestamp bit width and the year the ID space runs out"
+  ],
+  "constrained_variant": "on-prem, ZooKeeper, Go services"
+}

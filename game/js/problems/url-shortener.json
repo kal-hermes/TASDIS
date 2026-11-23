@@ -1,0 +1,29 @@
+{
+  "id": "url-shortener",
+  "title": "URL Shortener",
+  "vague_prompt": "Design a URL shortening service like bit.ly.",
+  "hidden_guidance": [
+    "100 million new links per day, and about 10 billion redirects per day",
+    "Read to write ratio about 100 to 1",
+    "Redirect latency target under 50 ms at p99",
+    "A short code must never repeat, and a redirect must point to the newest target after an edit",
+    "A link must stay valid for at least 5 years",
+    "Custom vanity codes are a paid feature and must be reserved for one owner"
+  ],
+  "known_patterns": [
+    "Base62 encoding of a counter or a hash",
+    "Key generation service that hands out preallocated counter ranges",
+    "Collision check when the code comes from a hash",
+    "301 for permanent links and 302 when click tracking is needed",
+    "Read path served from cache and CDN in front of the database",
+    "Separate read and write services because the read path carries most of the traffic"
+  ],
+  "common_misses": [
+    "Cache TTL and invalidation when a link target changes",
+    "Hot key problem for one viral link",
+    "Custom alias uniqueness and a reserved word list",
+    "Click analytics written off the redirect critical path",
+    "Cleanup and expiry of unused or dead links"
+  ],
+  "constrained_variant": "AWS, DynamoDB, ElastiCache, CloudFront"
+}

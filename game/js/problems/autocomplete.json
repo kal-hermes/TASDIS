@@ -1,0 +1,29 @@
+{
+  "id": "autocomplete",
+  "title": "Search Autocomplete",
+  "vague_prompt": "Design type-ahead autocomplete for a search box.",
+  "hidden_guidance": [
+    "8 billion searches per day, and about 10 keystroke requests per search",
+    "Suggestions must return in under 100 ms at p99",
+    "Only the top 10 suggestions for each prefix matter",
+    "Suggestion order follows query frequency from the last 24 hours, refreshed every hour",
+    "The index covers about 100 million distinct queries",
+    "About 2 percent of submitted queries hit the banned list and must be filtered from the result"
+  ],
+  "known_patterns": [
+    "Trie or prefix hash index over the query set",
+    "Precomputed top 10 list stored for each prefix",
+    "Frequency aggregation from query logs with a batch and a streaming path",
+    "Short TTL cache at the edge for popular prefixes",
+    "Filter layer for banned and offensive terms",
+    "Shard by prefix to spread the load"
+  ],
+  "common_misses": [
+    "Cache TTL and invalidation after a trending event",
+    "Hot prefix shard for very common letters",
+    "Global versus personalized suggestion trade-off",
+    "Storage cost of top 10 lists for every prefix",
+    "Freshness lag between a spike in searches and the new ranking"
+  ],
+  "constrained_variant": "GCP, BigQuery, Redis, Cloud CDN"
+}
