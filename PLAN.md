@@ -84,6 +84,8 @@ Tasks:
    process state to localStorage, with resume after reload.
 9. Design ledger per DESIGN.md section 5.4: structure, deterministic
    updates from artifact submissions, and storage in the session record.
+   The interviewer marks a revealed hidden-guidance item with the control
+   line `[[guidance: N]]`. The game records the item (DESIGN.md section 7).
 10. Context assembly per DESIGN.md section 7.1: layered assembly with the
     recency window. The summarization trigger itself lands in M3.
 11. Optional timer per DESIGN.md section 6: setup at `MENU`, off by
@@ -149,7 +151,8 @@ Tasks:
 2. How-to-play section reachable from `MENU` and from the settings dialog.
    The game also opens it at each load, at its top. Its box, "Do not show
    automatically in the future", stops that at the next load (section 8 of
-   `plans/m3-plan.md`).
+   `plans/m3-plan.md`). The last row of the section stays visible while the
+   text scrolls.
    Provider setup: the text model runs the interviewer and the grader, so
    it is the one required row. The vision and image rows stay unused until
    phase 2. M5 adds vision transcription, and the image role is reserved.

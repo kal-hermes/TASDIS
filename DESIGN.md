@@ -162,6 +162,8 @@ system.
   default. The section has a box, "Do not show automatically in the
   future". A tick on that box sets the setting to off. A box without a
   tick sets it back on. The closing of the section stores the setting.
+  The last row of the section, with the box and the Close button, stays
+  visible while the text scrolls.
 - Optional interview timer with presets such as 45 minutes, to match a real
   interview. Off by default, and configured at `MENU`.
 - A test connection button per provider row.
@@ -237,7 +239,7 @@ The system prompt assembles from blocks in this order:
 
 1. Persona and style block. MVP ships only the normal tech interviewer.
 2. Problem block: `vague_prompt`, plus `hidden_guidance` marked as
-   hold-back-until-asked.
+   hold-back-until-asked, with a number on each item.
 3. Process block: the five steps, an instruction to tag each turn with the
    current step, and an instruction to grade every number the candidate
    volunteers against the estimation table instead of accepting
@@ -248,6 +250,13 @@ The system prompt assembles from blocks in this order:
    stylistic flaw, not a merit. The interviewer can suggest wrapping up in
    character, but it must never declare the interview over. Only game code
    ends the interview.
+   Control lines end each reply. `[[step: N]]` names the step, and
+   `[[covered: N]]` marks a step as covered. `[[guidance: N]]` marks a
+   hidden guidance item that the reply reveals, with the number of that
+   item in the problem block. A hint can carry that line too. Game code
+   reads the lines. It records each revealed item in the ledger (section
+   5). It shows no line to the candidate. A number outside the list of
+   the problem is dropped.
 4. Estimation reference block: the latency, throughput, and availability
    table from the `system-design` skill (reference file
    `references/estimation-numbers.md`). The interviewer grades claims against

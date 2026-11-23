@@ -118,3 +118,17 @@ Three facts about this repository:
 
 Test: `game/tests/m3_howto.py`, written first. The older suites seed the
 new setting as off, so that the dialog stays out of their way.
+3. The last row of "How to play" stays visible while the text scrolls.
+   The dialog is a column: the text that scrolls, with the title, and
+   then the row with the box and Close. On some systems the scrollbar is
+   invisible, so the row is the sign that the text continues.
+4. The game wires `revealGuidance`. The problem block numbers the hidden
+   guidance items. The interviewer adds the control line `[[guidance: N]]`
+   to a reply that reveals item N. Game code records N in the ledger and
+   never shows the line. A number outside the list of the problem is
+   dropped. The ledger summary names the items that the interviewer
+   already surfaced.
+
+Tests: `game/tests/m3_howto.py` gains the last row. `game/tests/m3_guidance.py`
+is new and written first: the units, then a browser run with scripted
+replies over an intercepted endpoint.
