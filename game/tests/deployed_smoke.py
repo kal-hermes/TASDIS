@@ -52,10 +52,27 @@ def main():
             [url for url in loaded if not url.startswith(base + "/")]
 
         d = Driver(page, base)
-        # A new browser opens "How to play" at the start of the game.
+        # A new browser opens "How to play" at the start of the game. While
+        # its box is not ticked, it opens again at the next load.
+        page.wait_for_selector("#howto-dialog[open]")
+        assert page.evaluate("() => document.getElementById('howto-dialog').matches(':modal')"), \
+            "how to play is not a modal dialog"
+        page.click("#howto-close")
+        page.reload(wait_until="networkidle")
         page.wait_for_selector("#howto-dialog[open]")
         page.click("#howto-close")
-        d.start_session(help_mode="learning")
+        # The session starts on this page. A new load would open the dialog
+        # again, so the steps of Driver.start_session stand here without
+        # the navigation.
+        page.evaluate("() => localStorage.removeItem('tadsdi.session.v1')")
+        page.select_option("#problem-select", "url-shortener")
+        page.select_option("#help-mode", "learning")
+        page.select_option("#constraint-mode", "unconstrained")
+        page.select_option("#timer-preset", "0")
+        page.click("#start-interview")
+        page.wait_for_selector("#chat-log .chat-message.interviewer", timeout=15000)
+        page.wait_for_function(
+            "() => document.getElementById('send-btn').disabled === false")
         assert page.locator("#timer-hud").is_hidden(), "timer shows with the timer option off"
         d.send("About ten million writes per day, as a ballpark.")
         page.click("#tab-btn-latex")
@@ -96,7 +113,7 @@ def main():
     assert not errors, f"console or page errors:\n  " + "\n  ".join(errors)
     print(f"DEPLOYED SMOKE: PASS ({base})")
     print(f"  {files} files loaded, zero errors, one interview to its grade ({score}),"
-          " how to play opens once")
+          " how to play opens at the start until its box is ticked")
     return 0
 
 
