@@ -215,3 +215,18 @@ header {
 .doc-dialog dd {
   margin-left: 0;
 }
+
+/* The dialog opens at its top, with the title focused. The title is not a
+   control, so it shows no focus ring. */
+.doc-dialog h2:focus { outline: none; }
+
+/* The last row of the dialog: a check box, then Close. */
+.doc-dialog menu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid #ccc;
+}

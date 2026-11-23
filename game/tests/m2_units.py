@@ -20,7 +20,7 @@ SEED = json.dumps({"roles": {
     "text": {"provider": "mock", "baseUrl": "", "model": "m", "apiKey": ""},
     "vision": {"provider": "mock", "baseUrl": "", "model": "v", "apiKey": ""},
     "image": {"provider": "mock", "baseUrl": "", "model": "i", "apiKey": ""}},
-    "preferences": {}})
+    "preferences": {"showHowToAtStart": False}})
 
 
 def wait_port(port, timeout=10):
@@ -44,16 +44,16 @@ def main():
             browser = p.chromium.launch(args=["--no-sandbox"])
             page = browser.new_page()
             page.add_init_script(
-                f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(json.dumps(SEED))})")
+                f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(SEED)})")
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const grader = await import('./js/grader.js?v=22');
-              const prompts = await import('./js/prompts/grader-prompt.js?v=22');
-              const providers = await import('./js/providers.js?v=22');
-              const state = await import('./js/state.js?v=22');
+              const grader = await import('./js/grader.js?v=24');
+              const prompts = await import('./js/prompts/grader-prompt.js?v=24');
+              const providers = await import('./js/providers.js?v=24');
+              const state = await import('./js/state.js?v=24');
               const out = {};
 
               // parse: plain, fenced, preamble junk (full valid 8-row grade)

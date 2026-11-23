@@ -5,7 +5,8 @@ Run from the game/ directory:
 
 Starts a container-local http.server, drives headless Chromium, and checks
 the M0 acceptance:
-  a. page loads with zero console errors
+  a. page loads with zero console errors, and "How to play" opens over
+     the menu on a first visit
   b. settings save to localStorage and survive a reload
   c. test connection reports success against the mock provider
   d. a mock reply renders in the placeholder chat view
@@ -64,6 +65,11 @@ def main():
             assert window_flag(page), "window.__tadsdi missing (app did not boot)"
             assert not console_errors, f"console errors: {console_errors}"
             assert not page_errors, f"pageerror: {page_errors}"
+            # A first visit opens how to play over the menu.
+            page.wait_for_selector("#howto-dialog[open]")
+            page.click("#howto-close")
+            assert not page.locator("#howto-dialog").evaluate("d => d.open"), \
+                "Close did not close how to play"
 
             # b. settings round trip through localStorage
             page.click("#open-settings")
@@ -79,6 +85,9 @@ def main():
             assert data["roles"]["text"]["provider"] == "mock", data
 
             page.reload(wait_until="networkidle")
+            # The box was not ticked, so how to play opens again.
+            page.wait_for_selector("#howto-dialog[open]")
+            page.click("#howto-close")
             page.click("#open-settings")
             vision_model = page.locator('tr[data-role="vision"] input.model').input_value()
             assert vision_model == "vision-model", f"reload lost model: {vision_model!r}"

@@ -5,8 +5,9 @@
 The base URL is the directory that holds index.html, for example the
 project subpath of a GitHub Pages site. The script opens the page in a
 fresh browser, so it runs on the default settings: the mock provider. It
-checks three things: every file the game loads arrives, nothing logs an
-error, and one interview plays from the menu to its grade.
+checks four things: every file the game loads arrives, nothing logs an
+error, one interview plays from the menu to its grade, and "How to play"
+opens at the start until its box is ticked.
 """
 
 import pathlib
@@ -51,6 +52,9 @@ def main():
             [url for url in loaded if not url.startswith(base + "/")]
 
         d = Driver(page, base)
+        # A new browser opens "How to play" at the start of the game.
+        page.wait_for_selector("#howto-dialog[open]")
+        page.click("#howto-close")
         d.start_session(help_mode="learning")
         assert page.locator("#timer-hud").is_hidden(), "timer shows with the timer option off"
         d.send("About ten million writes per day, as a ballpark.")
@@ -74,12 +78,25 @@ def main():
         score = page.locator("#feedback-score").inner_text()
         assert "6 / 10" in score, score
         files = page.evaluate("() => performance.getEntriesByType('resource').length")
+
+        # The box in how to play is remembered: the next load opens no dialog.
+        page.click("#open-settings")
+        page.click("#open-howto-settings")
+        page.wait_for_selector("#howto-dialog[open]")
+        page.check("#howto-skip")
+        page.click("#howto-close")
+        page.keyboard.press("Escape")  # closes Settings
+        page.reload(wait_until="networkidle")
+        page.wait_for_function("() => Boolean(window.__tadsdi)")  # the game booted
+        assert page.evaluate("() => document.getElementById('howto-dialog').open") is False, \
+            "how to play opened at the start with the box ticked"
         browser.close()
 
     assert not failures, f"files that did not load:\n  " + "\n  ".join(failures)
     assert not errors, f"console or page errors:\n  " + "\n  ".join(errors)
     print(f"DEPLOYED SMOKE: PASS ({base})")
-    print(f"  {files} files loaded, zero errors, one interview to its grade ({score})")
+    print(f"  {files} files loaded, zero errors, one interview to its grade ({score}),"
+          " how to play opens once")
     return 0
 
 

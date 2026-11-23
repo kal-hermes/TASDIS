@@ -2,7 +2,7 @@
 // Schema per DESIGN.md section 5.2. Keys stay in localStorage and ride
 // only in the Authorization header to the provider (D9).
 
-import { complete } from './providers.js?v=22';
+import { complete } from './providers.js?v=24';
 
 export const SETTINGS_KEY = 'tadsdi.settings.v1';
 export const PROVIDER_ROLES = ['text', 'vision', 'image'];
@@ -21,6 +21,7 @@ function defaultSettings() {
       helpMode: 'learning',   // 'learning' | 'testing'
       constraintMode: 'unconstrained',
       timerMinutes: 0,        // 0 = off
+      showHowToAtStart: true, // false after the player ticks the box in how to play
     },
   };
 }
@@ -43,6 +44,18 @@ export function loadSettings() {
 
 export function saveSettings(settings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+// Whether "How to play" opens when the game loads. Only the value false
+// stops it, so a stored value of another shape still opens the dialog.
+export function howToAtStart() {
+  return loadSettings().preferences.showHowToAtStart !== false;
+}
+
+export function setHowToAtStart(show) {
+  const settings = loadSettings();
+  settings.preferences.showHowToAtStart = show;
+  saveSettings(settings);
 }
 
 function rowTemplate(role) {
@@ -128,7 +141,8 @@ export function initSettings() {
   document.getElementById('settings-close').addEventListener('click', () => dialog.close());
 
   document.getElementById('settings-save').addEventListener('click', () => {
-    const settings = defaultSettings();
+    // The rows replace the roles. The preferences stay as they are stored.
+    const settings = loadSettings();
     for (const row of tbody.querySelectorAll('tr[data-role]')) {
       settings.roles[row.dataset.role] = collectRow(row);
     }

@@ -1,10 +1,10 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings } from './settings.js?v=22';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=22';
-import { initExport } from './export.js?v=22';
-import { initSubmission } from './submission.js?v=22';
-import { loadProblems } from './problems.js?v=22';
+import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=24';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=24';
+import { initExport } from './export.js?v=24';
+import { initSubmission } from './submission.js?v=24';
+import { loadProblems } from './problems.js?v=24';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -114,12 +114,40 @@ async function startFromMenu() {
 
 // ---- how to play ------------------------------------------------------
 
+// The dialog is long, and its only button is at the end. A dialog focuses
+// its first focusable element when it opens, so the view went to the end.
+// The dialog now opens at its top, with the title focused.
+function openHowTo() {
+  const dialog = el('howto-dialog');
+  el('howto-skip').checked = !howToAtStart();
+  dialog.showModal();
+  dialog.scrollTop = 0;
+  el('howto-title').focus();
+}
+
+// The box acts when the player closes the dialog. The write happens in the
+// click and in the Escape key themselves: the close event of a dialog comes
+// one task later, which is too late for a reload that follows at once.
+function rememberHowToBox() {
+  setHowToAtStart(!el('howto-skip').checked);
+}
+
 function initHowTo() {
   const dialog = el('howto-dialog');
   for (const id of ['open-howto', 'open-howto-settings']) {
-    el(id).addEventListener('click', () => dialog.showModal());
+    el(id).addEventListener('click', openHowTo);
   }
-  el('howto-close').addEventListener('click', () => dialog.close());
+  el('howto-close').addEventListener('click', () => {
+    rememberHowToBox();
+    dialog.close();
+  });
+  dialog.addEventListener('cancel', rememberHowToBox);
+}
+
+// A new player reads how to play first. It opens over the screen that a
+// resume selected, until the player ticks the box in the dialog.
+function openHowToAtStart() {
+  if (howToAtStart()) openHowTo();
 }
 
 // ---- boot ------------------------------------------------------------
@@ -148,6 +176,7 @@ export function initApp() {
     problems = map;
     renderMenu();
   });
+  openHowToAtStart();
   window.__tadsdi = {
     showScreen,
     getProblemSlugs: () => [...problems.keys()],

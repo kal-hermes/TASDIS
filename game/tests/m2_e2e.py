@@ -28,7 +28,7 @@ def main():
             browser = p.chromium.launch(args=["--no-sandbox"])
             page = browser.new_page()
             page.add_init_script(
-                f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(json.dumps(SEED_SETTINGS))})")
+                f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(SEED_SETTINGS)})")
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
@@ -89,7 +89,7 @@ def main():
             for i in range(6):
                 d.send("Proceeding.")
             page.evaluate("""async () => {
-              const providers = await import('./js/providers.js?v=22');
+              const providers = await import('./js/providers.js?v=24');
               providers.setMockGraderQueue(['grade_bad']);
             }""")
             page.click("#end-interview-btn")

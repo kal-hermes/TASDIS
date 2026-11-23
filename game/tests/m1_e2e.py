@@ -25,7 +25,10 @@ SEED_SETTINGS = json.dumps({
         "vision": {"provider": "mock", "baseUrl": "", "model": "mock-vision", "apiKey": ""},
         "image": {"provider": "mock", "baseUrl": "", "model": "mock-image", "apiKey": ""},
     },
-    "preferences": {"helpMode": "learning", "constraintMode": "unconstrained", "timerMinutes": 0},
+    "preferences": {"helpMode": "learning", "constraintMode": "unconstrained", "timerMinutes": 0,
+                    # These suites do not test the start of the game, so how to
+                    # play must stay closed there. tests/m3_howto.py covers it.
+                    "showHowToAtStart": False},
 })
 
 MERMAID_SOURCE = "graph LR; Client-->LB; LB-->App; App-->DB;"
@@ -114,7 +117,7 @@ def main():
             browser = p.chromium.launch(args=["--no-sandbox"])
             context = browser.new_context()
             page = context.new_page()
-            page.add_init_script(f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(json.dumps(SEED_SETTINGS))})")
+            page.add_init_script(f"window.localStorage.setItem('tadsdi.settings.v1', {json.dumps(SEED_SETTINGS)})")
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
