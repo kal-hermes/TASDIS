@@ -147,6 +147,9 @@ Tasks:
    surface as readable messages with a retry path. Malformed grader output
    retries once, then shows a plain error without losing the session.
 2. How-to-play section reachable from `MENU` and from the settings dialog.
+   The game also opens it at each load, at its top. Its box, "Do not show
+   automatically in the future", stops that at the next load (section 8 of
+   `plans/m3-plan.md`).
    Provider setup: the text model runs the interviewer and the grader, so
    it is the one required row. The vision and image rows stay unused until
    phase 2. M5 adds vision transcription, and the image role is reserved.
@@ -169,7 +172,8 @@ Tasks:
    the published URL.
 
 Acceptance: error paths verified in the browser. The how-to-play section
-covers every provider row and every menu toggle. Export produces valid
+covers every provider row and every menu toggle. Until its box is ticked,
+it opens at each load, at its top. Export produces valid
 Markdown. The GitHub Pages URL loads and plays with the user's real API
 key.
 

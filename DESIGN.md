@@ -35,7 +35,8 @@ coverage, not step order.
 - Settings dialog for LLM providers, models, and API keys.
 - A how-to-play section covering provider setup (one required text model,
   vision and image rows reserved for phase 2), the menu toggles, and key
-  storage. It lands in M3.
+  storage. It lands in M3. Until the player ticks its box, "Do not show
+  automatically in the future", the game opens the section at each load.
 - End-of-interview grading with a 0 to 10 score and structured feedback.
 - One normal tech interviewer persona.
 
@@ -157,6 +158,10 @@ system.
   default, stored in the session record). The step tracker visibility is a
   learning-mode toggle stored in the session record. Testing mode hides
   the step tracker entirely.
+- Whether the game opens the how-to-play section at each load. On is the
+  default. The section has a box, "Do not show automatically in the
+  future". A tick on that box sets the setting to off. A box without a
+  tick sets it back on. The closing of the section stores the setting.
 - Optional interview timer with presets such as 45 minutes, to match a real
   interview. Off by default, and configured at `MENU`.
 - A test connection button per provider row.

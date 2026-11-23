@@ -104,3 +104,17 @@ Three facts about this repository:
 - Split each function with a CRAP score of 10 or more.
 - Cover each function that no test executed.
 - Measure again with both levers after the change.
+
+## 8. Two changes after M3, requested by the owner
+
+1. The game opens "How to play" at the start. The dialog has a box, "Do
+   not show automatically in the future". When the dialog closes with the
+   box ticked, the next load opens no dialog. A box that is not ticked
+   opens it again. The game keeps the choice in the settings, in the local
+   storage, where the game keeps all of its data. The game uses no
+   cookies. The dialog opens over the screen that a resume selected.
+2. The dialog opens at its top. Today its only focusable element is the
+   Close button at the end, so the browser scrolls to that button.
+
+Test: `game/tests/m3_howto.py`, written first. The older suites seed the
+new setting as off, so that the dialog stays out of their way.
