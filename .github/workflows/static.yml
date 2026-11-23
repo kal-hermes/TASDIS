@@ -17,9 +17,11 @@ on:
       - .github/workflows/static.yml
   workflow_dispatch:
 
-# The checkout reads the repository. Pages needs the other two.
+# The checkout reads the repository. Pages needs the other two. The wait
+# step reads the artifacts of this run.
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -59,6 +61,26 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+
+      # GitHub lists a new artifact a moment after the upload reports
+      # success. One run deployed before that moment and found no artifact.
+      # This step waits until the artifact is listed.
+      - name: Wait for the uploaded artifact to be listed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 10); do
+            listed=$(gh api \
+              "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+              --jq '[.artifacts[] | select(.name == "github-pages")] | length')
+            if [ "$listed" = "1" ]; then
+              echo "The artifact github-pages is listed (attempt $attempt)."
+              exit 0
+            fi
+            sleep 6
+          done
+          echo "The artifact github-pages is not listed after 10 attempts."
+          exit 1
 
       - id: deployment
         uses: actions/deploy-pages@v4
