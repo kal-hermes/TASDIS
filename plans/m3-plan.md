@@ -86,8 +86,17 @@ submodule `TASDIS/` of `games`. GitHub publishes a project site at
 `https://kal-hermes.github.io/TASDIS/`.
 
 The workflow `.github/workflows/static.yml` in that repository deploys the
-runtime files of `game/` on a push to main. `game/tests/deployed_smoke.py`
-checks a deployed copy and takes the base URL as its argument.
+runtime files of `game/` on a push to main. The site is live and verified
+(`game/tests/deployed_smoke.py` with no argument).
+
+Three facts about this repository:
+
+- The owner turned Pages on once in the repository settings, with GitHub
+  Actions as the source. The token of a workflow run cannot do that.
+- One run deployed before GitHub listed the uploaded artifact, and failed.
+  The workflow now waits until the artifact is listed.
+- The address keeps the capital letters of the repository name. The
+  address `https://kal-hermes.github.io/tasdis/` returns 404.
 
 ## 7. Make it right
 
