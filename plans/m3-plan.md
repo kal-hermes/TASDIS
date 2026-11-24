@@ -139,3 +139,14 @@ replies over an intercepted endpoint.
    the items that the interviewer never revealed.
 
 Test: the units of `game/tests/m3_guidance.py`, written first.
+
+6. The API key of a provider row is optional. When it is empty, the game
+   makes the call without an auth header: no `Authorization` for the
+   OpenAI shapes, no `x-api-key` for Anthropic. The model name and, for
+   openai-compatible, the base URL stay required. A 401 or 403 error
+   points at the key in Settings. It also says an endpoint that needs
+   no key takes an empty one.
+
+Test: the units and the keyless sections of `game/tests/m3_errors.py`,
+written first: an empty key and a set key over an intercepted endpoint,
+for both adapters, with the auth headers captured.

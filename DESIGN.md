@@ -150,8 +150,9 @@ system.
 
 - Providers, one row per role (`text`, `vision`, `image`): provider id
   (`openai`, `anthropic`, or `openai-compatible`), base URL, model name, and
-  API key. Keys stay in localStorage and ride only in the Authorization
-  header to the provider.
+  API key. The key is optional: an endpoint that needs no key (a gateway, a
+  local model server) gets its call without an auth header. A set key stays
+  in localStorage and rides only in the auth header to the provider.
 - Interview preferences: learning or testing mode, constrained or
   unconstrained mode, persona (phase 2), language (phase 2). The menu also
   offers a proactive-guidance preference (learning mode only, off by
