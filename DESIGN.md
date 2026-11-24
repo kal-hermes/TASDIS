@@ -221,7 +221,11 @@ States: `MENU`, `BRIEFING`, `INTERVIEW`, `GRADING`, `FEEDBACK`.
 
 The user can reopen earlier steps. The tracker records coverage, not order.
 The tracker shows all five steps covered, and the user agrees to end. The
-engine then ends the interview. The user can also ask to finish early.
+engine then ends the interview. The user can also ask to finish early. The
+end control is available on every candidate turn, whatever the tracker
+shows: ending is the user's call, never something the model's bookkeeping
+can take away. An interview ended with steps unmarked grades honestly on
+the missing rows.
 
 An optional timer can bound the interview. It uses accumulated active time:
 `remaining_ms` ticks down only while the send button is enabled, which is
@@ -240,17 +244,39 @@ The system prompt assembles from blocks in this order:
 
 1. Persona and style block. MVP ships only the normal tech interviewer.
 2. Problem block: `vague_prompt`, plus `hidden_guidance` marked as
-   hold-back-until-asked, with a number on each item.
-3. Process block: the five steps, an instruction to tag each turn with the
-   current step, and an instruction to grade every number the candidate
-   volunteers against the estimation table instead of accepting
-   hand-waving. The interviewer never solicits an estimate the candidate
-   has not offered, and never suggests that the candidate run
-   calculations. The interviewer accepts aggressive rounding and ballpark
-   figures. It treats false precision (four significant digits) as a
-   stylistic flaw, not a merit. The interviewer can suggest wrapping up in
-   character, but it must never declare the interview over. Only game code
-   ends the interview.
+   hold-back-until-asked, with a number on each item. The block closes the
+   world: the vague statement and the hidden list are the only requirements
+   of the interview. The interviewer never invents or implies a
+   requirement, constraint, scale number, or SLA from its general
+   knowledge. When the candidate asks about something the list does not
+   cover, the interviewer says to assume anything reasonable instead of
+   supplying a number.
+3. Process block: the five steps, each with its job. Step 1 collects
+   requirements and constraints. Step 2 gets an end-to-end sketch that
+   stays at the big picture. Step 3 works the core components in depth.
+   Step 4 names bottlenecks and what fixes them. Step 5 addresses scaling.
+   The interviewer runs the steps in order and does not open a later
+   step's material early. When feedback on the current step touches
+   material from a later step, the interviewer says so in one short line.
+   Then it returns to the current step's job. It drills into bottlenecks
+   and optimization in step 4. When the candidate opens that door first,
+   it also drills there. In learning mode it says out loud what it
+   parks. In testing mode it announces nothing about structure, and its
+   next question aims at the current step's job instead. The process
+   block also carries the tracker-truth rule. A reply that states a
+   hidden guidance item ends with that item's `[[guidance: N]]` line.
+   That holds every time, also for an item already surfaced. A step is
+   announced in words only together with its `[[step: N]]` line. The
+   block tags each turn with the current step.
+   It instructs the interviewer to grade every volunteered number against
+   the estimation table instead of accepting hand-waving. The
+   interviewer never solicits an estimate the candidate has not offered,
+   and never suggests that the candidate run calculations. The
+   interviewer accepts aggressive rounding and ballpark figures. It
+   treats false precision (four significant digits) as a stylistic
+   flaw, not a merit. The interviewer can suggest wrapping up in
+   character, but it must never declare the interview over. Only game
+   code ends the interview.
    Control lines end each reply. `[[step: N]]` names the step, and
    `[[covered: N]]` marks a step as covered. `[[guidance: N]]` marks a
    hidden guidance item that the reply reveals, with the number of that

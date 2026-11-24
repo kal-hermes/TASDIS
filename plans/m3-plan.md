@@ -150,3 +150,24 @@ Test: the units of `game/tests/m3_guidance.py`, written first.
 Test: the units and the keyless sections of `game/tests/m3_errors.py`,
 written first: an empty key and a set key over an intercepted endpoint,
 for both adapters, with the auth headers captured.
+
+7. The interviewer gets a directing protocol and a closed world. The
+   process block gives each of the five steps a job, runs them in order,
+   and forbids opening a later step's material early. Bottleneck depth
+   waits for step 4, or for the candidate opening that door. Learning
+   mode says out loud what it parks. Testing mode announces nothing
+   about structure and aims its next question at the current step's job.
+   The problem block closes the world: the vague statement and the
+   hidden list are the only requirements. The interviewer never invents
+   a constraint. When the list does not cover an ask, it says to assume
+   anything reasonable. A tracker-truth rule demands the `[[guidance:
+   N]]` line whenever a reply states an item, and `[[step: N]]` with any
+   step named in words. The per-turn tracker line of the interviewer
+   context states the current step's job, so the anchor survives
+   compression. The end control is available on every candidate turn.
+   The reason: a live interview showed a real model leaving steps
+   unmarked, which used to hide the end button for the whole session.
+
+Test: the prompt flags of `game/tests/m1_units.py` and the end-control
+section of `game/tests/m3_ui.py`, both written first and red on the
+missing rules.
