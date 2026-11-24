@@ -12,7 +12,7 @@ import sys
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from m1_e2e import Driver, GAME_DIR, PORT as M1_PORT, SEED_SETTINGS  # noqa: E402
+from m1_e2e import Driver, GAME_DIR, PORT as M1_PORT, SEED_SETTINGS, SESSION_KEY  # noqa: E402
 
 PORT = M1_PORT + 4
 BASE = f"http://127.0.0.1:{PORT}"
@@ -79,8 +79,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=27');
-              const exp = await import(base + 'js/export.js?v=27');
+              const state = await import(base + 'js/state.js?v=28');
+              const exp = await import(base + 'js/export.js?v=28');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',
@@ -153,9 +153,32 @@ def main():
             assert "```mermaid" in final_text, "final export lacks the artifact"
             print("  ok   export browser: mid-interview and feedback downloads are valid Markdown")
 
+            # ---- E. the end control does not depend on the bookkeeping -
+            # A live interview showed a real model leaving steps unmarked
+            # while the conversation moved on, which used to hide the end
+            # button for the rest of the session. Steps unmarked: the
+            # candidate can still end.
+            page.evaluate("""async ([base, key]) => {
+              const state = await import(base + 'js/state.js?v=28');
+              const problem = await (await fetch(base + 'js/problems/url-shortener.json')).json();
+              const session = state.newSession(problem, { helpMode: 'learning' });
+              state.addMessage(session, 'interviewer', 'Here is the problem. Over to you.');
+              session.coveredSteps = [1];
+              session.currentStep = 4;
+              session.state = 'INTERVIEW';
+              localStorage.setItem(key, JSON.stringify(session));
+            }""", [MODULES, SESSION_KEY])
+            page.reload(wait_until="networkidle")
+            page.wait_for_selector("body[data-screen='interview']", timeout=20000)
+            page.wait_for_function(
+                "() => document.getElementById('send-btn').disabled === false", timeout=20000)
+            assert page.locator("#end-interview-btn").is_visible(), \
+                "the end control hides while the tracker is incomplete"
+            print("  ok   end control: visible while steps 2 and 3 are unmarked")
+
             assert not errors, f"console/page errors: {errors}"
             browser.close()
-        print("M3 UI: PASS (how to play, transcript export)")
+        print("M3 UI: PASS (how to play, transcript export, end control)")
         return 0
     finally:
         server.terminate()

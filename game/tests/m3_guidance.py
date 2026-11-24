@@ -24,10 +24,10 @@ BASE = f"http://127.0.0.1:{PORT}"
 MODULES = BASE + "/"  # base URL for dynamic imports in page.evaluate
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=27');
-  const engine = await import(base + 'js/engine.js?v=27');
-  const assemble = await import(base + 'js/prompts/assemble.js?v=27');
-  const context = await import(base + 'js/context.js?v=27');
+  const state = await import(base + 'js/state.js?v=28');
+  const engine = await import(base + 'js/engine.js?v=28');
+  const assemble = await import(base + 'js/prompts/assemble.js?v=28');
+  const context = await import(base + 'js/context.js?v=28');
   const out = {};
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
     hidden_guidance: ['g1', 'g2', 'g3'] };
@@ -67,7 +67,7 @@ UNITS = """async (base) => {
 
   // The grader receives the texts of the revealed items, in the order of
   // the ledger. The ledger itself passes as it is stored.
-  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=27');
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=28');
   const graded = state.newSession({ ...problem, known_patterns: ['kp'], common_misses: ['cm'] });
   const input = (variant) => JSON.parse(
     prompts.buildGraderMessages(graded, variant)[1].content.split('Input:\\n\\n')[1]);
@@ -204,7 +204,7 @@ def main():
 
             # 5. the interviewer is told what it already surfaced
             head = page.evaluate("""async ([base, key]) => {
-              const context = await import(base + 'js/context.js?v=27');
+              const context = await import(base + 'js/context.js?v=28');
               const session = JSON.parse(localStorage.getItem(key));
               return context.assembleContext(session, { contextTokens: 0 })
                 .filter((m) => m.role === 'system').map((m) => m.content).join('\\n');
@@ -220,7 +220,7 @@ def main():
 
             # 7. the grader input of that stored session names the three items
             graded = page.evaluate("""async ([base, key]) => {
-              const prompts = await import(base + 'js/prompts/grader-prompt.js?v=27');
+              const prompts = await import(base + 'js/prompts/grader-prompt.js?v=28');
               const session = JSON.parse(localStorage.getItem(key));
               const user = prompts.buildGraderMessages(session, 'final')[1].content;
               const input = JSON.parse(user.split('Input:\\n\\n')[1]);

@@ -8,7 +8,7 @@
 // HttpError). The public interface turns every failure into one readable
 // message with a next step, so no caller parses a raw failure.
 
-import { loadSettings } from './settings.js?v=27';
+import { loadSettings } from './settings.js?v=28';
 
 const PROVIDER_NAMES = {
   mock: 'mock',
@@ -323,7 +323,7 @@ let mockScriptCache = null;
 async function loadMockScript(config) {
   if (mockScriptCache) return mockScriptCache;
   const base = config.baseUrl || new URL('.', import.meta.url).href;
-  const scriptUrl = new URL('prompts/mock-script.json?v=27', base).href;
+  const scriptUrl = new URL('prompts/mock-script.json?v=28', base).href;
   mockScriptCache = await fetchJson(scriptUrl, {});
   return mockScriptCache;
 }

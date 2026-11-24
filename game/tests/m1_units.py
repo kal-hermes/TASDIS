@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=27');
-              const context = await import('./js/context.js?v=27');
-              const assemble = await import('./js/prompts/assemble.js?v=27');
+              const state = await import('./js/state.js?v=28');
+              const context = await import('./js/context.js?v=28');
+              const assemble = await import('./js/prompts/assemble.js?v=28');
               const out = {};
 
               const problem = {
@@ -93,6 +93,13 @@ def main():
                 hasPinned: prompt[0].content.includes('AWS, MySQL'),
                 hasNoSolicit: /Never solicit an\s+estimate/.test(prompt[0].content),
                 hasNoVolunteer: prompt[0].content.includes('Never volunteer process guidance'),
+                hasStepJobs: prompt[0].content.includes('4: name bottlenecks'),
+                hasDirecting: prompt[0].content.includes("do not open a later step's material early"),
+                hasDrillRule: prompt[0].content.includes('only in step 4'),
+                hasClosedWorld: /the ONLY requirements of\s+this interview/.test(prompt[0].content),
+                hasNoInvent: /assume\s+anything reasonable/.test(prompt[0].content),
+                hasEmitDiscipline: prompt[0].content.includes('MUST end with that item'),
+                hasTrackerTruth: prompt[0].content.includes('Keep the tracker truthful'),
               };
               const learn = assemble.assembleInterviewerPrompt(
                 {problem, helpMode: 'learning', constraintMode: 'unconstrained'});
@@ -120,6 +127,7 @@ def main():
                 systemBlocks: ctxBig.filter(m => m.role === 'system').length,
                 hasLedger: ctxBig.some(m => m.content.includes('Design ledger')),
                 hasTracker: ctxBig.some(m => m.content.includes('Step tracker')),
+                anchorInstruction: ctxBig.some(m => m.content.includes('later step waits for its step')),
                 hasArtifactFence: ctxBig.some(m => m.content.includes('```mermaid\\ngraph LR')),
                 bigKeepsOldest: ctxBig.some(m => m.content.includes('filler message 0 ')),
                 smallWindowKeepsLatest: ctx[ctx.length - 1].role,
@@ -141,7 +149,10 @@ def main():
                 "currentStep": 1,
                 "prompt": {"messages": 1, "hasPersona": True, "hasVague": True, "hasHidden": True,
                            "hasEstimation": True, "hasTestingRefusal": True, "hasPinned": True,
-                           "hasNoSolicit": True, "hasNoVolunteer": True},
+                           "hasNoSolicit": True, "hasNoVolunteer": True,
+                           "hasStepJobs": True, "hasDirecting": True, "hasDrillRule": True,
+                           "hasClosedWorld": True, "hasNoInvent": True,
+                           "hasEmitDiscipline": True, "hasTrackerTruth": True},
                 "promptLearning": True,
                 "promptFreeChoice": True,
                 "learningPassive": True,
@@ -149,6 +160,7 @@ def main():
                 "learningProactive": True,
                 "briefingTurns": 2,
                 "context": {"systemBlocks": 3, "hasLedger": True, "hasTracker": True,
+                            "anchorInstruction": True,
                             "hasArtifactFence": True, "bigKeepsOldest": True,
                             "smallWindowKeepsLatest": "assistant", "smallWindowTurns": 6,
                             "smallWindowDropsArtifacts": True},

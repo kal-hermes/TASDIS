@@ -2,7 +2,7 @@
 // Schema per DESIGN.md section 5.2. Keys stay in localStorage and ride
 // only in the Authorization header to the provider (D9).
 
-import { complete } from './providers.js?v=27';
+import { complete } from './providers.js?v=28';
 
 export const SETTINGS_KEY = 'tadsdi.settings.v1';
 export const PROVIDER_ROLES = ['text', 'vision', 'image'];

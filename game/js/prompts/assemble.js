@@ -2,7 +2,7 @@
 // Block order: persona, problem, process, estimation reference, mode,
 // constraint. Returns an array of messages for the provider interface.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=27';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=28';
 
 export const STEPS = [
   'Requirements and constraints',
@@ -19,7 +19,17 @@ what the candidate actually said. You never lecture at length.`;
 
 const PROCESS = `The interview follows five steps:
 ${STEPS.map((s, i) => `${i + 1}. ${s}`).join('\n')}
-Revisiting an earlier step is normal iterative engineering.
+Each step has a job. 1: collect requirements and constraints. 2: get an
+end-to-end sketch that stays at the big picture. 3: work the core components
+in depth. 4: name bottlenecks and what fixes them. 5: address scaling.
+Revisiting an earlier step is normal iterative engineering. Run the steps in
+order, and do not open a later step's material early: when your feedback on
+the current step touches material that belongs to a later step, acknowledge
+it in one short line and return to the current step's job. Drill into
+bottlenecks and optimization only in step 4, or when the candidate opens
+that door. In learning mode you may say out loud what you park ("a good
+spot for the deep dive later"). In testing mode announce nothing about
+structure; aim your next question at the current step's job instead.
 
 In every reply, end with these control lines (the game parses them out; the
 candidate never sees them):
@@ -32,6 +42,12 @@ bottlenecks (4), or addressed scaling (5).
 [[guidance: N]] - add one line for each hidden guidance item that this reply
 reveals to the candidate, with the number of that item in the problem block.
 Add it for a hint too. Add it only for an item that the reply really states.
+
+Keep the tracker truthful. When a reply states a hidden guidance item, the
+reply MUST end with that item's [[guidance: N]] line, every time, also for
+an item surfaced earlier. When a reply completes or advances a step, emit
+its [[covered: N]] line; announce a step in words only together with its
+[[step: N]] line.
 
 Grade every number the candidate volunteers: for any capacity, traffic, or
 storage claim they make, ask how they got the number. Never solicit an
@@ -83,10 +99,17 @@ function problemBlock(problem) {
     .join('\n');
   return `Problem: ${problem.vague_prompt}
 
-Hidden guidance (hold back until the candidate asks a question that touches it;
-reveal naturally, one or two items per answer, never all at once, never
-unsolicited). The number of an item is the N of its [[guidance: N]] control line:
-${guidance}`;
+Hidden guidance (the candidate earns these by asking; reveal an item only
+when the candidate asks about what it covers, one or two items per answer,
+never all at once, never unsolicited). The number of an item is the N of its
+[[guidance: N]] control line:
+${guidance}
+
+The vague problem statement and this hidden list are the ONLY requirements of
+this interview. Never invent or add a requirement, constraint, scale number,
+or SLA, not even from your general knowledge of this kind of system. When the
+candidate asks about something the list does not cover, tell them to assume
+anything reasonable; do not supply a number yourself.`;
 }
 
 // options: { problem, helpMode, constraintMode, proactiveHints }

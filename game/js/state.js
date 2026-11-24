@@ -109,7 +109,3 @@ export function revealGuidance(session, indices) {
     if (valid(i)) revealed.push(i);
   }
 }
-
-export function allStepsCovered(session) {
-  return session.coveredSteps.length === 5;
-}

@@ -14,9 +14,9 @@
 // narrative and lines for the ledger. Game code checks the shape and applies
 // it; nothing that the model returns is used as it arrives.
 
-import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=27';
-import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=27';
-import { extractJsonObject } from './json-reply.js?v=27';
+import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=28';
+import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=28';
+import { extractJsonObject } from './json-reply.js?v=28';
 
 export const DEFAULT_CONTEXT_TOKENS = 32000;
 export const THRESHOLD = 0.6;
@@ -46,7 +46,9 @@ function trackerText(session) {
     ? session.coveredSteps.join(', ')
     : 'none';
   return `Step tracker: covered steps: ${covered}. Current step: ` +
-    `${session.currentStep} (${STEPS[session.currentStep - 1]}).`;
+    `${session.currentStep} (${STEPS[session.currentStep - 1]}). Stay within ` +
+    `the current step's job: material that belongs to a later step waits ` +
+    `for its step.`;
 }
 
 // Ledger lines that are not an artifact: the Artifacts block carries every
