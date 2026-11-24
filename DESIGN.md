@@ -319,7 +319,12 @@ transcription before submission, so vision errors stay out of the grade.
 
 The grader is a separate call with its own system prompt. Its input is the
 whole transcript, the design ledger (section 5.4), all artifacts,
-`known_patterns`, and `common_misses`. Process evidence comes from the
+`known_patterns`, and `common_misses`. It also receives
+`hidden_guidance_revealed`: the texts of the hidden guidance items that the
+interviewer revealed. The grader judges the design against those
+constraints. It does not count them as estimates of the candidate. It does
+not receive the items that the interviewer never revealed. Process
+evidence comes from the
 transcript, and solution quality comes from the ledger plus artifacts, so
 chat noise never touches the solution judgment. It never sees the interview
 live.

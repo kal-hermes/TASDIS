@@ -112,7 +112,9 @@ Tasks:
 
 1. Grader prompt: separate system prompt per DESIGN.md section 9, fed
    transcript, design ledger, artifacts, `known_patterns`, and
-   `common_misses`. Process comes from the transcript, and the solution
+   `common_misses`. The texts of the revealed hidden guidance items were
+   added later (`hidden_guidance_revealed`, `plans/m3-plan.md` item 8.5).
+   Process comes from the transcript, and the solution
    comes from the ledger plus artifacts.
 2. Strict JSON grader output: process coverage, eight diagnostic rows with
    pass or fail and a fix each, realism judgments per claimed number,

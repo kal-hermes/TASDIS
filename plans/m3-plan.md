@@ -105,7 +105,7 @@ Three facts about this repository:
 - Cover each function that no test executed.
 - Measure again with both levers after the change.
 
-## 8. Two changes after M3, requested by the owner
+## 8. Changes after M3, requested by the owner
 
 1. The game opens "How to play" at the start. The dialog has a box, "Do
    not show automatically in the future". When the dialog closes with the
@@ -132,3 +132,10 @@ new setting as off, so that the dialog stays out of their way.
 Tests: `game/tests/m3_howto.py` gains the last row. `game/tests/m3_guidance.py`
 is new and written first: the units, then a browser run with scripted
 replies over an intercepted endpoint.
+5. The grader receives the texts of the revealed hidden guidance items,
+   in the field `hidden_guidance_revealed` of its input. The ledger keeps
+   the numbers. The grader judges the design against these constraints.
+   They are not estimates of the candidate. The grader does not receive
+   the items that the interviewer never revealed.
+
+Test: the units of `game/tests/m3_guidance.py`, written first.
