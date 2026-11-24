@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Totally Accurate System Design Interview Simulator</title>
   <link rel="stylesheet" href="js/vendor/katex.min.css?v=1">
-  <link rel="stylesheet" href="css/main.css?v=26">
+  <link rel="stylesheet" href="css/main.css?v=27">
 </head>
 <body data-screen="menu">
   <header>
@@ -164,7 +164,8 @@
         <p>Open Settings. The table has three rows: text, vision, and image.</p>
         <p>The text row is the only row that the game uses now. Its model plays
            the interviewer and writes the grade. Select a provider, then type the
-           model name and your API key. Select Test connection to check the row.</p>
+           model name. Add your API key only when the endpoint needs one; an
+           empty key calls without it. Select Test connection to check the row.</p>
         <p>The vision row will read your handwritten notes from a photo. The
            image row will draw the interviewer. A later release adds both, so you
            can leave the two rows empty.</p>
@@ -245,6 +246,6 @@
 
   <script src="js/vendor/katex.min.js?v=1"></script>
   <script src="js/vendor/mermaid.min.js?v=1"></script>
-  <script type="module" src="js/app.js?v=26"></script>
+  <script type="module" src="js/app.js?v=27"></script>
 </body>
 </html>

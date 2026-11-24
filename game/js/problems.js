@@ -15,7 +15,7 @@ const cache = new Map();
 
 export async function loadProblem(slug) {
   if (cache.has(slug)) return cache.get(slug);
-  const url = new URL(`problems/${slug}.json?v=26`, import.meta.url).href;
+  const url = new URL(`problems/${slug}.json?v=27`, import.meta.url).href;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`problem bank entry not found: ${slug} (HTTP ${response.status})`);

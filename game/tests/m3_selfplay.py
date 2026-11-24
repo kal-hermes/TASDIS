@@ -40,7 +40,7 @@ OPENAI_API = "**/fake/v1/chat/completions"
 def queue_faults(page, faults):
     page.evaluate(
         """async ([base, faults]) => {
-          const providers = await import(base + 'js/providers.js?v=26');
+          const providers = await import(base + 'js/providers.js?v=27');
           providers.setMockFaultQueue(faults);
         }""", [MODULES, faults])
 
@@ -322,11 +322,23 @@ def run_edges(d, page, errors):
     assert ping["messages"] == [{"role": "user", "content": "ping"}], ping
     page.unroute(ANTHROPIC_API, anthropic_route)
 
-    page.select_option(f"{row} select.provider-id", "openai")
+    # An empty API key is accepted: the ping goes out with no auth header.
+    page.select_option(f"{row} select.provider-id", "openai-compatible")
+    page.fill(f"{row} input.base-url", f"{BASE}/fake/v1")
+    page.fill(f"{row} input.model", "fake-model")
     page.fill(f"{row} input.api-key", "")
+    keyless = []
+
+    def keyless_route(route):
+        keyless.append(route.request.headers)
+        route.fulfill(status=200, content_type="application/json", body=json.dumps(
+            {"choices": [{"message": {"content": "pong without a key"}}]}))
+    page.route(OPENAI_API, keyless_route)
     page.click(f"{row} button.test-connection")
-    page.wait_for_selector(f"{row} .test-result.fail", timeout=20000)
-    assert "No API key set" in page.locator(f"{row} .test-result.fail").inner_text()
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    assert "pong without a key" in page.locator(f"{row} .test-result.ok").inner_text()
+    assert "authorization" not in keyless[0], f"empty key sent auth headers: {keyless[0]}"
+    page.unroute(OPENAI_API, keyless_route)
 
     openai_requests = []
 

@@ -8,7 +8,7 @@
 // HttpError). The public interface turns every failure into one readable
 // message with a next step, so no caller parses a raw failure.
 
-import { loadSettings } from './settings.js?v=26';
+import { loadSettings } from './settings.js?v=27';
 
 const PROVIDER_NAMES = {
   mock: 'mock',
@@ -75,7 +75,8 @@ export function setProviderTimeouts(partial) {
 
 function httpAdvice(name, status, body) {
   if (status === 401 || status === 403) {
-    return `${name} rejected the API key (HTTP ${status}). Check the API key in Settings.`;
+    return `${name} rejected the request (HTTP ${status}). Check the API key in ` +
+      'Settings; leave it empty if your endpoint needs none.';
   }
   if (status === 404) {
     return `${name} returned HTTP 404. Check the Base URL and the model name in Settings.`;
@@ -193,17 +194,18 @@ async function streamSse(url, init, onDelta) {
 
 // ---- request builders -------------------------------------------------
 
-// One place builds the OpenAI-shape request for both call styles.
+// One place builds the OpenAI-shape request for both call styles. An empty
+// API key sends no Authorization header: a gateway or a local endpoint can
+// need none.
 function openAiRequest(config, messages, stream) {
   const base = (config.baseUrl || DEFAULT_BASES.openai).replace(/\/+$/, '');
+  const headers = { 'Content-Type': 'application/json' };
+  if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`;
   return {
     url: `${base}/chat/completions`,
     init: {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
+      headers,
       body: JSON.stringify({ model: config.model, messages, stream }),
     },
   };
@@ -218,16 +220,17 @@ function anthropicParts(config, messages) {
 
 function anthropicRequest(config, messages, stream) {
   const { base, system, turns } = anthropicParts(config, messages);
+  const headers = {
+    'Content-Type': 'application/json',
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+  };
+  if (config.apiKey) headers['x-api-key'] = config.apiKey;
   return {
     url: `${base}/v1/messages`,
     init: {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': config.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers,
       body: JSON.stringify({
         model: config.model,
         max_tokens: 2048,
@@ -320,7 +323,7 @@ let mockScriptCache = null;
 async function loadMockScript(config) {
   if (mockScriptCache) return mockScriptCache;
   const base = config.baseUrl || new URL('.', import.meta.url).href;
-  const scriptUrl = new URL('prompts/mock-script.json?v=26', base).href;
+  const scriptUrl = new URL('prompts/mock-script.json?v=27', base).href;
   mockScriptCache = await fetchJson(scriptUrl, {});
   return mockScriptCache;
 }
@@ -446,9 +449,8 @@ export function validateConfig(role, config) {
   }
   if (config.provider === 'mock') return config;
   const name = PROVIDER_NAMES[config.provider];
-  if (!config.apiKey) {
-    throw new ConfigError(`No API key set for the ${role} role (${name}). Add one in Settings.`);
-  }
+  // The API key is optional: a gateway or a local endpoint can need none.
+  // An empty key sends the call without an auth header.
   if (!config.model) {
     throw new ConfigError(`No model name set for the ${role} role (${name}). Add one in Settings.`);
   }

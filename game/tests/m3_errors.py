@@ -2,6 +2,8 @@
 validation, then browser runs for every retry path: a failed turn, a failed
 briefing, a failed wrap-up, grading that fails twice, and the real
 OpenAI-compatible adapter against an intercepted endpoint (abort, 401, hang).
+A call with an empty API key goes out without an auth header (both
+openai-compatible and anthropic).
 Run from game/:
     uv run --with playwright python tests/m3_errors.py
 """
@@ -112,7 +114,7 @@ def main():
 
             # ---- units ------------------------------------------------
             out = page.evaluate("""async (base) => {
-              const providers = await import(base + 'js/providers.js?v=26');
+              const providers = await import(base + 'js/providers.js?v=27');
               const E = providers.ProviderErrors;
               const d = (err, name) => providers.describeProviderError(err, name).message;
               const out = {};
@@ -135,7 +137,8 @@ def main():
                 try { providers.validateConfig(role, config); return 'ok'; }
                 catch (e) { return e.message; }
               };
-              out.noKey = v('text', { provider: 'openai', apiKey: '', model: 'gpt' });
+              out.emptyKey = v('text', { provider: 'openai', apiKey: '', model: 'gpt' });
+              out.missingKey = v('text', { provider: 'anthropic', model: 'm' });
               out.noModel = v('text', { provider: 'openai', apiKey: 'k', model: '' });
               out.keyOk = v('text', { provider: 'openai', apiKey: 'k', model: 'gpt' });
               out.noBase = v('vision', { provider: 'openai-compatible', apiKey: 'k',
@@ -172,15 +175,17 @@ def main():
 
             expect("network", "OpenAI", "network or CORS", "Base URL")
             expect("timeout", "OpenAI", "did not answer within", "Retry")
-            expect("http401", "Anthropic", "rejected the API key", "HTTP 401", "Settings")
-            expect("http403", "rejected the API key")
+            expect("http401", "Anthropic", "rejected the request", "HTTP 401", "Settings",
+                   "leave it empty")
+            expect("http403", "rejected the request")
             expect("http404", "HTTP 404", "Base URL", "model")
             expect("http429", "HTTP 429", "Wait")
             expect("http500", "HTTP 500", "upstream down", "Retry")
             expect("http418", "HTTP 418", "short and stout")
             expect("empty", "empty reply")
             expect("unknown", "OpenAI call failed", "something odd")
-            expect("noKey", "No API key set", "text", "OpenAI", "Settings")
+            assert out["emptyKey"] == "ok" and out["missingKey"] == "ok", \
+                f"an empty API key must validate: {out['emptyKey']!r} {out['missingKey']!r}"
             expect("noModel", "No model name set", "Settings")
             expect("noBase", "Base URL", "Settings")
             assert out["notWrappedTwice"], "describeProviderError wrapped an error twice"
@@ -203,7 +208,7 @@ def main():
                 before = len(d.stored_session()["transcript"])
                 page.evaluate(
                     """async ([base, fault]) => {
-                      const providers = await import(base + 'js/providers.js?v=26');
+                      const providers = await import(base + 'js/providers.js?v=27');
                       providers.setMockFaultQueue([fault]);
                     }""", [MODULES, fault])
                 page.fill("#candidate-input", "Going fine.")
@@ -229,7 +234,7 @@ def main():
             d.open_menu()
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=26');
+                  const providers = await import(base + 'js/providers.js?v=27');
                   providers.setMockFaultQueue(['network']);
                 }""", MODULES)
             page.click("#start-interview")
@@ -255,7 +260,7 @@ def main():
             assert page.locator("#end-interview-btn").is_visible()
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=26');
+                  const providers = await import(base + 'js/providers.js?v=27');
                   providers.setMockFaultQueue(['http:500']);
                 }""", MODULES)
             page.click("#end-interview-btn")
@@ -273,7 +278,7 @@ def main():
                 d.send("Proceeding.")
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=26');
+                  const providers = await import(base + 'js/providers.js?v=27');
                   providers.setMockGraderQueue(['grade_bad', 'grade_bad']);
                 }""", MODULES)
             page.click("#end-interview-btn")
@@ -286,19 +291,13 @@ def main():
             assert "6 / 10" in page.locator("#feedback-score").inner_text()
             print("  ok   grading failure: message after one retry, Retry grading recovers")
 
-            # ---- browser: missing API key -----------------------------
-            d.open_menu()
-            set_text_role(page, provider="openai", model="gpt-test", apiKey="")
-            page.click("#start-interview")
-            page.wait_for_selector("#briefing-retry", state="visible", timeout=20000)
-            status = page.locator("#briefing-status").inner_text()
-            assert "No API key set" in status and "Settings" in status, status
-            print("  ok   missing API key: named in the briefing error")
-
             # ---- browser: the real adapter against an intercepted endpoint
             mode = {"value": "ok"}
+            captured = {}  # the auth headers of the last intercepted call
 
             def handler(route):
+                captured["authorization"] = route.request.header_value("authorization")
+                captured["x-api-key"] = route.request.header_value("x-api-key")
                 if mode["value"] == "abort":
                     route.abort()
                 elif mode["value"] == "hang":
@@ -317,7 +316,7 @@ def main():
                           model="fake-model", apiKey="k")
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=26');
+                  const providers = await import(base + 'js/providers.js?v=27');
                   providers.setProviderTimeouts({ requestMs: 1500, idleMs: 1500 });
                 }""", MODULES)
             page.click("#start-interview")
@@ -328,7 +327,7 @@ def main():
             assert "Real reply." in first, first
 
             for value, needle in [("abort", "network or CORS"),
-                                  ("401", "rejected the API key"),
+                                  ("401", "rejected the request"),
                                   ("hang", "did not answer within")]:
                 mode["value"] = value
                 page.fill("#candidate-input", "Over to you.")
@@ -343,9 +342,73 @@ def main():
                 assert speakers(d.stored_session())[-1] == "interviewer", value
             print("  ok   real adapter: abort, 401, and hang map to readable notices, Retry recovers")
 
+            # ---- browser: an empty API key calls without an auth header -
+            # A gateway or a local endpoint can need no key at all. The
+            # briefing proves the call went out; the capture proves no auth
+            # header rode along. A set key brings the header back.
+            mode["value"] = "ok"
+            d.open_menu()
+            set_text_role(page, provider="openai-compatible", baseUrl=f"{BASE}/fake/v1",
+                          model="fake-model", apiKey="")
+            captured.clear()
+            page.click("#start-interview")
+            page.wait_for_selector("body[data-screen='interview']", timeout=20000)
+            page.wait_for_function(
+                "() => document.getElementById('send-btn').disabled === false", timeout=20000)
+            assert "Real reply." in page.locator(
+                "#chat-log .chat-message.interviewer").first.inner_text()
+            assert captured.get("authorization") is None \
+                and captured.get("x-api-key") is None, \
+                f"an empty key still sent auth headers: {captured}"
+            print("  ok   empty API key: the call went out with no auth header")
+
+            d.open_menu()
+            set_text_role(page, provider="openai-compatible", baseUrl=f"{BASE}/fake/v1",
+                          model="fake-model", apiKey="k")
+            captured.clear()
+            page.click("#start-interview")
+            page.wait_for_selector("body[data-screen='interview']", timeout=20000)
+            page.wait_for_function(
+                "() => document.getElementById('send-btn').disabled === false", timeout=20000)
+            assert captured.get("authorization") == "Bearer k" \
+                and captured.get("x-api-key") is None, captured
+            print("  ok   a set key rides in Authorization: Bearer <key>")
+
+            # ---- browser: anthropic without a key sends no x-api-key ----
+            ANTHROPIC_SSE = ('data: {"type":"content_block_delta",'
+                             '"delta":{"type":"text_delta","text":"Real reply."}}\n\n')
+
+            def anthropic_handler(route):
+                captured["authorization"] = route.request.header_value("authorization")
+                captured["x-api-key"] = route.request.header_value("x-api-key")
+                route.fulfill(status=200, content_type="text/event-stream", body=ANTHROPIC_SSE)
+            page.route("**/fake/v1/messages", anthropic_handler)
+            d.open_menu()
+            # The anthropic adapter appends /v1/messages itself, so the base
+            # URL stops before /v1.
+            set_text_role(page, provider="anthropic", baseUrl=f"{BASE}/fake",
+                          model="claude-test", apiKey="")
+            # The reload of open_menu reset the module state, so the short
+            # timeouts go back on (the stalled-stream section relies on them).
+            page.evaluate(
+                """async (base) => {
+                  const providers = await import(base + 'js/providers.js?v=27');
+                  providers.setProviderTimeouts({ requestMs: 1500, idleMs: 1500 });
+                }""", MODULES)
+            captured.clear()
+            page.click("#start-interview")
+            page.wait_for_selector("body[data-screen='interview']", timeout=20000)
+            page.wait_for_function(
+                "() => document.getElementById('send-btn').disabled === false", timeout=20000)
+            assert captured.get("x-api-key") is None \
+                and captured.get("authorization") is None, \
+                f"an empty anthropic key still sent auth headers: {captured}"
+            print("  ok   anthropic without a key: no x-api-key header")
+
             # ---- browser: a stream that starts and then stalls ----------
             before = len(d.stored_session()["transcript"])
-            set_text_role(page, baseUrl=f"http://127.0.0.1:{STALL_PORT}/v1")
+            set_text_role(page, provider="openai-compatible", model="fake-model", apiKey="",
+                          baseUrl=f"http://127.0.0.1:{STALL_PORT}/v1")
             page.fill("#candidate-input", "One that stalls.")
             page.click("#send-btn")
             text = notice_text(page)
@@ -361,7 +424,7 @@ def main():
             page.unroute(FAKE_API, handler)
             assert not app_console_errors(errors), f"console/page errors: {app_console_errors(errors)}"
             browser.close()
-        print("M3 ERRORS: PASS (mapping, validation, turn/briefing/wrap-up/grading retries, real adapter, stalled stream)")
+        print("M3 ERRORS: PASS (mapping, validation, turn/briefing/wrap-up/grading retries, real adapter, keyless calls, stalled stream)")
         return 0
     finally:
         server.terminate()

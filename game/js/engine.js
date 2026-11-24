@@ -8,13 +8,13 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   allStepsCovered,
-} from './state.js?v=26';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=26';
-import { assembleContext, compressIfNeeded } from './context.js?v=26';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=26';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=26';
-import { renderLatex } from './render-latex.js?v=26';
-import { renderMermaid } from './render-mermaid.js?v=26';
+} from './state.js?v=27';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=27';
+import { assembleContext, compressIfNeeded } from './context.js?v=27';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=27';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=27';
+import { renderLatex } from './render-latex.js?v=27';
+import { renderMermaid } from './render-mermaid.js?v=27';
 
 let session = null;
 let busy = false;

@@ -79,8 +79,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=26');
-              const exp = await import(base + 'js/export.js?v=26');
+              const state = await import(base + 'js/state.js?v=27');
+              const exp = await import(base + 'js/export.js?v=27');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',

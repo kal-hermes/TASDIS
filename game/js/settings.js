@@ -2,7 +2,7 @@
 // Schema per DESIGN.md section 5.2. Keys stay in localStorage and ride
 // only in the Authorization header to the provider (D9).
 
-import { complete } from './providers.js?v=26';
+import { complete } from './providers.js?v=27';
 
 export const SETTINGS_KEY = 'tadsdi.settings.v1';
 export const PROVIDER_ROLES = ['text', 'vision', 'image'];
@@ -68,7 +68,7 @@ function rowTemplate(role) {
       <td><select class="provider-id">${options}</select></td>
       <td><input class="base-url" type="text" placeholder="https://..."></td>
       <td><input class="model" type="text"></td>
-      <td><input class="api-key" type="password"></td>
+      <td><input class="api-key" type="password" placeholder="optional"></td>
       <td>
         <button type="button" class="test-connection">Test connection</button>
         <div class="test-result" role="status"></div>
