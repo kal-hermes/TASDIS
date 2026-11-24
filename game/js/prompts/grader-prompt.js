@@ -3,7 +3,7 @@
 // the design ledger plus artifacts. The grader never sees the interview
 // live.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=25';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=26';
 
 export const DIAGNOSTIC_ROWS = [
   {
@@ -63,6 +63,9 @@ Evidence rules:
   from the transcript.
 - Solution quality comes only from the design ledger and the artifacts, never
   from chat noise.
+- hidden_guidance_revealed lists the constraints that the interviewer stated
+  in the interview, after the candidate asked. Judge the design against
+  them. They are not estimates of the candidate.
 - Judge every claimed number for realism by ORDER OF MAGNITUDE against the
   estimation reference table below. A ballpark answer within one order of
   magnitude passes. Rounding to friendly figures counts as good practice.
@@ -97,12 +100,23 @@ PROGRESS report, not a final grade. Do not output a score. Shape:
   "note": "<one sentence stating plainly that the interview is still open>"
 }`;
 
+// The texts of the hidden guidance items that the interviewer revealed, in
+// the order of the ledger. The ledger keeps the numbers. A stored number
+// that no item has yields nothing.
+function revealedGuidanceTexts(session) {
+  const items = session.problem && session.problem.hidden_guidance;
+  const numbers = session.ledger.revealedGuidance || [];
+  if (!Array.isArray(items)) return [];
+  return numbers.map((n) => items[n - 1]).filter((text) => typeof text === 'string');
+}
+
 function graderInput(session) {
   const problem = session.problem;
   return {
     problem: { id: problem.id, title: problem.title, vague_prompt: problem.vague_prompt },
     known_patterns: problem.known_patterns,
     common_misses: problem.common_misses,
+    hidden_guidance_revealed: revealedGuidanceTexts(session),
     transcript: session.transcript,
     artifacts: session.artifacts,
     design_ledger: session.ledger,

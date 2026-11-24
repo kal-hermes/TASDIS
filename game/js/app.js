@@ -1,10 +1,10 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=25';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=25';
-import { initExport } from './export.js?v=25';
-import { initSubmission } from './submission.js?v=25';
-import { loadProblems } from './problems.js?v=25';
+import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=26';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=26';
+import { initExport } from './export.js?v=26';
+import { initSubmission } from './submission.js?v=26';
+import { loadProblems } from './problems.js?v=26';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 

@@ -2,7 +2,7 @@
 // Block order: persona, problem, process, estimation reference, mode,
 // constraint. Returns an array of messages for the provider interface.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=25';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=26';
 
 export const STEPS = [
   'Requirements and constraints',

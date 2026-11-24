@@ -40,7 +40,7 @@ OPENAI_API = "**/fake/v1/chat/completions"
 def queue_faults(page, faults):
     page.evaluate(
         """async ([base, faults]) => {
-          const providers = await import(base + 'js/providers.js?v=25');
+          const providers = await import(base + 'js/providers.js?v=26');
           providers.setMockFaultQueue(faults);
         }""", [MODULES, faults])
 

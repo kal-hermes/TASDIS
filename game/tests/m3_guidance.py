@@ -24,10 +24,10 @@ BASE = f"http://127.0.0.1:{PORT}"
 MODULES = BASE + "/"  # base URL for dynamic imports in page.evaluate
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=25');
-  const engine = await import(base + 'js/engine.js?v=25');
-  const assemble = await import(base + 'js/prompts/assemble.js?v=25');
-  const context = await import(base + 'js/context.js?v=25');
+  const state = await import(base + 'js/state.js?v=26');
+  const engine = await import(base + 'js/engine.js?v=26');
+  const assemble = await import(base + 'js/prompts/assemble.js?v=26');
+  const context = await import(base + 'js/context.js?v=26');
   const out = {};
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
     hidden_guidance: ['g1', 'g2', 'g3'] };
@@ -64,6 +64,27 @@ UNITS = """async (base) => {
   const bare = { ledger: { revealedGuidance: [] } };
   state.revealGuidance(bare, [1]);
   out.bare = bare.ledger.revealedGuidance.length;
+
+  // The grader receives the texts of the revealed items, in the order of
+  // the ledger. The ledger itself passes as it is stored.
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=26');
+  const graded = state.newSession({ ...problem, known_patterns: ['kp'], common_misses: ['cm'] });
+  const input = (variant) => JSON.parse(
+    prompts.buildGraderMessages(graded, variant)[1].content.split('Input:\\n\\n')[1]);
+  const texts = (variant) => input(variant).hidden_guidance_revealed;
+  out.graderEmpty = Array.isArray(texts('final')) && texts('final').length === 0;
+  state.revealGuidance(graded, [2, 1]);
+  out.graderFinal = texts('final').join('|');
+  out.graderMid = texts('mid').join('|');
+  out.graderLedger = input('final').design_ledger.revealedGuidance.join(',');
+  out.graderRule = prompts.buildGraderMessages(graded, 'final')[0].content
+    .includes('hidden_guidance_revealed lists');
+  graded.ledger.revealedGuidance.push(99);  // a number that no item has
+  out.graderCorrupt = texts('final').join('|');
+  // A guidance list that is not a list gives the grader nothing, not a character.
+  const odd = { ...graded, problem: { ...problem, hidden_guidance: 'abc' } };
+  out.graderNoList = prompts.buildGraderMessages(odd, 'final')[1].content
+    .includes('"hidden_guidance_revealed":[]');
   return out;
 }"""
 
@@ -74,6 +95,13 @@ EXPECTED = {
     "prompt": "true,true,true,true",
     "ledgerLine": True,
     "bare": 0,
+    "graderEmpty": True,
+    "graderFinal": "g2|g1",
+    "graderMid": "g2|g1",
+    "graderLedger": "2,1",
+    "graderRule": True,
+    "graderCorrupt": "g2|g1",
+    "graderNoList": True,
 }
 
 
@@ -103,7 +131,7 @@ def main():
             bad = {key: (out.get(key), value) for key, value in EXPECTED.items()
                    if out.get(key) != value}
             assert not bad, f"units: {bad}"
-            print("  ok   units: revealGuidance, parseControlLines, problem block, ledger summary")
+            print("  ok   units: revealGuidance, parseControlLines, problem block, ledger summary, grader input")
 
             # ---- browser: scripted replies over an intercepted endpoint
             replies = []  # the next replies of the endpoint, in order
@@ -176,7 +204,7 @@ def main():
 
             # 5. the interviewer is told what it already surfaced
             head = page.evaluate("""async ([base, key]) => {
-              const context = await import(base + 'js/context.js?v=25');
+              const context = await import(base + 'js/context.js?v=26');
               const session = JSON.parse(localStorage.getItem(key));
               return context.assembleContext(session, { contextTokens: 0 })
                 .filter((m) => m.role === 'system').map((m) => m.content).join('\\n');
@@ -189,6 +217,23 @@ def main():
                 "() => document.getElementById('send-btn').disabled === false", timeout=20000)
             assert revealed() == [2, 1, 3], revealed()
             print("  ok   browser: the ledger summary names the items; a reload keeps them")
+
+            # 7. the grader input of that stored session names the three items
+            graded = page.evaluate("""async ([base, key]) => {
+              const prompts = await import(base + 'js/prompts/grader-prompt.js?v=26');
+              const session = JSON.parse(localStorage.getItem(key));
+              const user = prompts.buildGraderMessages(session, 'final')[1].content;
+              const input = JSON.parse(user.split('Input:\\n\\n')[1]);
+              return { texts: input.hidden_guidance_revealed,
+                       numbers: input.design_ledger.revealedGuidance,
+                       items: session.problem.hidden_guidance };
+            }""", [MODULES, SESSION_KEY])
+            with open(GAME_DIR / "js" / "problems" / "url-shortener.json", encoding="utf-8") as f:
+                items = json.load(f)["hidden_guidance"]
+            assert graded["items"] == items, "the stored problem differs from the problem file"
+            assert graded["numbers"] == [2, 1, 3], graded["numbers"]
+            assert graded["texts"] == [items[1], items[0], items[2]], graded["texts"]
+            print("  ok   browser: the grader input carries the texts of items 2, 1 and 3 of the real problem")
 
             # ---- browser: the mock provider ---------------------------
             mock = browser.new_page()
