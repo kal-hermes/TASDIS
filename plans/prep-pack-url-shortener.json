@@ -1,0 +1,75 @@
+{
+  "gist": "This is a read-heavy key-value service wearing a CRUD costume. Redirects outnumber new links about 100 to 1, so the read path carries the design: a thin redirect service in front of a cache, with the database on the write path only. The interview tests whether the candidate spots that imbalance and whether the write path keeps its promises over time: codes never repeat, a redirect follows the newest target after an edit, links stay valid for years. The trap is designing a generic web app and never stating what makes this one hard.",
+  "dimensions": {
+    "1": [
+      "Traffic: about 100 million new links per day and about 10 billion redirects per day",
+      "Read to write ratio about 100 to 1",
+      "Redirect latency target under 50 ms at p99",
+      "Code uniqueness and newest-target-after-edit",
+      "Five year validity",
+      "Vanity codes as a paid feature, reserved for one owner",
+      "A strong candidate asks for scale, latency, and consistency instead of inventing them. The closed world rule covers the rest: assume anything reasonable."
+    ],
+    "2": [
+      "Client to load balancer to stateless redirect service to cache to database",
+      "The write service separated from the read service",
+      "Click analytics landing off the redirect critical path",
+      "302 chosen when tracking is needed, 301 only for truly permanent links",
+      "The sketch stays at boxes and arrows. Depth waits for step 3."
+    ],
+    "3": [
+      "Code generation: Base62 of a counter with preallocated ranges, or a hash with a collision check",
+      "The 62^7 space and how long it lasts at the stated write rate",
+      "Schema: code, target, owner, created, expiry",
+      "The vanity path: ownership check plus a reserved word list",
+      "Edit semantics on the write path, not just create"
+    ],
+    "4": [
+      "Hot key: one viral link pounding one cache entry",
+      "Cache invalidation when a target changes: TTL patience versus explicit purge",
+      "Analytics write volume amplified at read time",
+      "Code space exhaustion horizon",
+      "Cache stampede on a cold or expired popular entry"
+    ],
+    "5": [
+      "Read replication and sharding by code",
+      "Geo: serving redirects near the user, and what edits cost across regions",
+      "Multi-DC write path and where the counter service lives",
+      "Capacity math that holds the stated numbers, within an order of magnitude"
+    ]
+  },
+  "anchors": {
+    "1": "Hearing scale: the candidate asks for traffic or produces an estimate near these numbers before designing",
+    "2": "Hearing the imbalance: the candidate states that reads dominate by far and lets that shape the read path",
+    "3": "Hearing the target: latency is named as a requirement or asked for, then honored in the cache discussion",
+    "4": "Hearing immutability: codes never repeat, and an edit moves every future redirect to the newest target",
+    "5": "Hearing persistence: five years turns into a storage estimate of roughly 182 billion rows",
+    "6": "Hearing the vanity contract: uniqueness check, reserved words, one owner, paid tier"
+  },
+  "probes": [
+    {
+      "step": 1,
+      "q": "If a user edits where their link points today, what does yesterday's short code do tomorrow?"
+    },
+    {
+      "step": 2,
+      "q": "Where does the click count land, and does it slow the redirect?"
+    },
+    {
+      "step": 3,
+      "q": "How long until seven-character Base62 codes run out at the write rate you accepted?"
+    },
+    {
+      "step": 4,
+      "q": "You cached the redirect for an hour. The owner edits the target right now. Walk me through the next redirect."
+    },
+    {
+      "step": 4,
+      "q": "One link goes viral on live television. What breaks first, and what fixes it?"
+    },
+    {
+      "step": 5,
+      "q": "A user in Singapore and a user in Ohio click the same link at the same second. Who serves whom, and what does each answer cost?"
+    }
+  ]
+}

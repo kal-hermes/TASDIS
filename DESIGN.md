@@ -141,6 +141,13 @@ Bump the version on every edit of that file, including ES module sub-imports.
   choice, or a queue for fanout. Used by the grader.
 - `constrained_variant`: optional pinned stack for constrained mode, for
   example "AWS, MySQL, RabbitMQ".
+- `interviewer_brief`: optional author-time prep pack for the interviewer
+  (section 7). Shape: `gist` (one framing paragraph). `dimensions` (keys 1
+  to 5, one list per step). `anchors` (one entry per `hidden_guidance`
+  item, phrased as what hearing it sounds like). `probes` (at least six,
+  each with `step` 1 to 5 and a speakable question). The template floor is
+  five dimensions, one anchor per item, and six probes. Game code inspects
+  the shape at bank load time. A malformed pack fails the load loudly.
 
 The bank starts with eight to ten classics: URL shortener, rate limiter, news
 feed, chat, autocomplete, web crawler, unique ID generator, and notification
@@ -183,6 +190,10 @@ system.
 - Design ledger: the cleaned-up solution state per section 5.4.
 - Timer state: remaining milliseconds and a running flag. Present only in
   sessions with the optional timer on.
+- Probe budget: the cap the player chose for prepared probes per step
+  (`maxProbesPerStep`, 0 to 5, default 2) and the counts of asked probes
+  (`probesUsed`, keyed by step). Learning mode only. The counts come from
+  the `[[probe: N]]` control lines.
 
 ### 5.4 Design ledger (the cleaned-up solution)
 
@@ -251,7 +262,16 @@ The system prompt assembles from blocks in this order:
    knowledge. When the candidate asks about something the list does not
    cover, the interviewer says to assume anything reasonable instead of
    supplying a number.
-3. Process block: the five steps, each with its job. Step 1 collects
+3. Interviewer brief block: the problem's `interviewer_brief` prep pack
+   (section 5.1). A problem without a pack skips this block.
+   It holds the gist. It holds the dimension list of the current step. It
+   holds the anchors of the items that are not surfaced yet, and the
+   prepared probes of the current step. The probes appear in learning mode
+   only, within the per-step cap the player set. Each asked probe carries
+   a `[[probe: N]]` control line. The brief is listen-for material. Its
+   contents reach the candidate only through the candidate's own asks or
+   the candidate's own work.
+4. Process block: the five steps, each with its job. Step 1 collects
    requirements and constraints. Step 2 gets an end-to-end sketch that
    stays at the big picture. Step 3 works the core components in depth.
    Step 4 names bottlenecks and what fixes them. Step 5 addresses scaling.
@@ -294,7 +314,7 @@ The system prompt assembles from blocks in this order:
    inside the turn, so the clock stays paused and the ledger is
    consistent before the next candidate turn. The briefing and the
    wrap-up are not checked.
-4. Estimation reference block: the latency, throughput, and availability
+5. Estimation reference block: the latency, throughput, and availability
    table from the `system-design` skill (reference file
    `references/estimation-numbers.md`). The interviewer grades claims against
    this table instead of its own memory, which removes most grader
@@ -303,7 +323,7 @@ The system prompt assembles from blocks in this order:
    Design Primer, and the original Jeff Dean latency gists (jboner/2841832
    and hellerbarde/2843375). A user who learned from those sources finds the
    same numbers here.
-5. Mode block. Learning mode: on request, give a hint first, then a fuller
+6. Mode block. Learning mode: on request, give a hint first, then a fuller
    explanation, then a walkthrough. A proactive-guidance preference (off by
    default) additionally allows the interviewer to end a turn with one
    gentle pointer toward an unexplored area. Without that preference the
@@ -313,7 +333,7 @@ The system prompt assembles from blocks in this order:
    or terms the candidate has not used, for example QPS, caching, or
    sharding. It never asks the candidate to run numbers, and it never
    signals that a step is missing or incomplete.
-6. Constraint block: pinned stack in constrained mode, free choice otherwise.
+7. Constraint block: pinned stack in constrained mode, free choice otherwise.
 
 The interviewer reads artifacts from structured blocks in the conversation.
 It marks up a diagram by emitting a corrected or commented Mermaid source

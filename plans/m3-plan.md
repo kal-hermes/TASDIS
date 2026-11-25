@@ -190,3 +190,28 @@ Test: the checker units and the intercepted-endpoint sections of
 reveal with no control line reaches the ledger through the scripted
 checker reply. A failed checker names itself and loses nothing. The
 mock path records from the checker queue.
+
+9. The url-shortener problem carries an `interviewer_brief` prep pack
+   (`gist`, five `dimensions`, six `anchors`, six step-gated `probes`).
+   The pack is the interviewer's author-time mental model, written once
+   instead of improvised per session. Game code inspects the pack shape
+   at bank load time. The template floor: five dimensions, one anchor per
+   hidden item, at least six probes. A malformed pack fails the load
+   loudly. The pack reaches only the interviewer's context. The brief
+   block holds the gist, the dimension list of the current step, the
+   anchors of the not-yet-surfaced items, and the current step's probes.
+   Probes exist in learning mode only. The player caps them per step
+   (`maxProbesPerStep`, 0 to 5, default 2, menu select, frozen in testing
+   mode). Each asked probe carries a `[[probe: N]]` control line. The
+   per-step counts ride the session (`probesUsed`) and the never-
+   compressed head as a budget line. The other seven problems follow the
+   same pattern on this template floor.
+
+Test: the brief units of `game/tests/m1_units.py` (validation, block
+assembly, mode and cap gates, probe lines). Also the probe-cap section
+of `game/tests/m3_ui.py`, the budget-anchor section of
+`game/tests/m3_context.py`, and the probe-line section of
+`game/tests/m3_guidance.py`. All were written first and red. Red cases:
+a valid pack passes. Malformed packs throw with the problem id. The
+block holds the current step's material only. Cap 0 and testing mode
+remove the probes. A probe line counts once per step.
