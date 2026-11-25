@@ -63,8 +63,10 @@ jobs:
           path: _site
 
       # GitHub lists a new artifact a moment after the upload reports
-      # success. One run deployed before that moment and found no artifact.
-      # This step waits until the artifact is listed.
+      # success, and the deploy step reads a metadata view that lags the
+      # list view. One run deployed before that moment and found no
+      # artifact. This step waits until the artifact is listed, then
+      # gives the metadata view a moment more.
       - name: Wait for the uploaded artifact to be listed
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,6 +77,7 @@ jobs:
               --jq '[.artifacts[] | select(.name == "github-pages")] | length')
             if [ "$listed" = "1" ]; then
               echo "The artifact github-pages is listed (attempt $attempt)."
+              sleep 15
               exit 0
             fi
             sleep 6
