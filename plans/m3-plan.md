@@ -207,6 +207,17 @@ mock path records from the checker queue.
    compressed head as a budget line. The other seven problems follow the
    same pattern on this template floor.
 
+   Shipped: all eight problems carry a pack. The seven drafts sit in
+   `plans/prep-pack-<slug>.json` next to the url-shortener draft. Each
+   pack's arithmetic was computed, not quoted. The load-bearing numbers:
+   the 200 follower fan-out lands near 231 thousand feed inserts per
+   second. Chat flows at about 579 thousand messages per second.
+   Autocomplete answers about 926 thousand keystroke requests per second.
+   The crawler needs 386 parallel hosts at the politeness ceiling. Twelve
+   sequence bits give 4096 IDs per millisecond per machine. Notification
+   backoff runs about 31 seconds before a dead letter. The bank load
+   inspects every pack, so a malformed one fails the menu loudly.
+
 Test: the brief units of `game/tests/m1_units.py` (validation, block
 assembly, mode and cap gates, probe lines). Also the probe-cap section
 of `game/tests/m3_ui.py`, the budget-anchor section of
