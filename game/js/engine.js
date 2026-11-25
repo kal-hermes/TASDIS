@@ -8,15 +8,16 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=33';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=33';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=33';
-import { assembleContext, compressIfNeeded } from './context.js?v=33';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=33';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=33';
-import { parseTurn } from './turn-parse.js?v=33';
-import { renderLatex } from './render-latex.js?v=33';
-import { renderMermaid } from './render-mermaid.js?v=33';
+} from './state.js?v=34';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=34';
+import { feedBlips } from './audio.js?v=34';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=34';
+import { assembleContext, compressIfNeeded } from './context.js?v=34';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=34';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=34';
+import { parseTurn } from './turn-parse.js?v=34';
+import { renderLatex } from './render-latex.js?v=34';
+import { renderMermaid } from './render-mermaid.js?v=34';
 
 let session = null;
 let busy = false;
@@ -295,12 +296,14 @@ export async function runLlmTurn({ purpose, helpRequest }) {
         helpMode: session.helpMode,
         constraintMode: session.constraintMode,
         proactiveHints: session.proactiveHints === true,
+        persona: session.persona || 'normal',
       });
     } else {
       messages = await interviewerContext();
     }
     const raw = await completeStream('text', messages, (chunk) => {
       streamEl.textContent += chunk;
+      feedBlips(chunk);
       streamEl.scrollIntoView({ behavior: 'auto', block: 'end' });
     }, options);
     const { clean, step, covered, guidance, probes } = parseControlLines(raw);
@@ -337,6 +340,7 @@ async function startInterview(problem, prefs, timerMinutes) {
   resetMockState();
   helpStage = 0;
   session = newSession(problem, prefs);
+  session.persona = prefs.persona || 'normal';
   if (timerMinutes > 0) {
     session.timer = {
       enabled: true,

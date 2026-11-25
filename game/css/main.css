@@ -1,15 +1,90 @@
 /* TADSDI main.css */
+
+/* Press Start 2P (OFL 1.1, license at fonts/OFL.txt). Latin text uses the
+   pixel face; CJK and other scripts fall back to the system stacks. */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('../fonts/PressStart2P-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --pixel-font: 'Press Start 2P', 'Hiragino Sans', 'Microsoft YaHei',
+    system-ui, sans-serif;
+  --accent: #7aa2f7;
+  --panel-bg: #1e2430;
+  --panel-ink: #eef2f8;
+  --frame: #10141c;
+  --shadow: #000000;
+}
+
 [hidden] { display: none !important; }
 
 html { font-size: 16px; }
 
 body {
-  font-family: system-ui, sans-serif;
-  font-size: 1rem;
+  font-family: var(--pixel-font);
+  font-size: 0.875rem;
+  line-height: 1.9;
   margin: 0 auto;
   max-width: 960px;
   padding: 0 1rem;
+  background: #141821;
+  color: var(--panel-ink);
 }
+
+button, select, input, textarea {
+  font-family: var(--pixel-font);
+  font-size: 0.875rem;
+  color: var(--panel-ink);
+  background: var(--panel-bg);
+  border: 3px solid var(--frame);
+  box-shadow: 3px 3px 0 var(--shadow);
+  border-radius: 0;
+  padding: 0.45rem 0.6rem;
+}
+
+button { cursor: pointer; }
+button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shadow); }
+
+#screen-interview {
+  background: var(--panel-bg);
+  color: var(--panel-ink);
+  border: 4px solid var(--frame);
+  box-shadow: 6px 6px 0 var(--shadow);
+  padding: 1rem;
+}
+
+/* Persona backdrops (DESIGN.md section 11): one per persona. */
+#screen-interview.persona-klingon { background: linear-gradient(#2b0f0f, #170808); }
+#screen-interview.persona-vulcan { background: linear-gradient(#101c2e, #081018); }
+#screen-interview.persona-pirate { background: linear-gradient(#0e2233, #071421); }
+#screen-interview.persona-cowboy { background: linear-gradient(#2e2416, #1a140c); }
+#screen-interview.persona-normal { background: linear-gradient(#1e2430, #12161e); }
+
+#chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border: 3px solid var(--frame);
+  box-shadow: 3px 3px 0 var(--shadow);
+  background: rgba(0, 0, 0, 0.35);
+  margin-bottom: 0.75rem;
+}
+
+#persona-portrait {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+#persona-name {
+  font-size: 1rem;
+  color: var(--accent);
+}
+
 
 h1 { font-size: 2.25rem; }  /* 2.25x body - page title */
 h2 { font-size: 1.5rem; }   /* 1.5x body - screen title */

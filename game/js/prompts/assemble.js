@@ -2,8 +2,9 @@
 // Block order: persona, problem, process, estimation reference, mode,
 // constraint. Returns an array of messages for the provider interface.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=33';
-import { briefBlock } from './brief.js?v=33';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=34';
+import { briefBlock } from './brief.js?v=34';
+import { getPersona } from '../personas.js?v=34';
 
 export const STEPS = [
   'Requirements and constraints',
@@ -13,10 +14,15 @@ export const STEPS = [
   'Scaling',
 ];
 
-const PERSONA = `You are a senior systems engineer conducting a system design interview at a
-technology company. You are professional, direct, and warm. You speak like a real
-interviewer: short turns, one or two focused questions at a time, and you react to
-what the candidate actually said. You never lecture at length.`;
+// The plain interviewer voice is the `normal` persona's block, so one
+// source holds it. A selected persona replaces this block
+// (DESIGN.md section 11).
+const PERSONA = getPersona('normal').promptBlock;
+
+function personaBlock(persona) {
+  if (!persona || persona === 'normal') return PERSONA;
+  return getPersona(persona).promptBlock;
+}
 
 const PROCESS = `The interview follows five steps:
 ${STEPS.map((s, i) => `${i + 1}. ${s}`).join('\n')}
@@ -118,7 +124,7 @@ anything reasonable; do not supply a number yourself.`;
 export function assembleInterviewerPrompt(options) {
   const { problem, helpMode = 'learning', constraintMode = 'unconstrained',
     proactiveHints = false, currentStep = 1, revealedGuidance = [],
-    probeCap = 0, probesAsked = 0 } = options;
+    probeCap = 0, probesAsked = 0, persona = 'normal' } = options;
   const modeBlock = helpMode === 'testing'
     ? MODE_TESTING
     : MODE_LEARNING_BASE + (proactiveHints ? MODE_LEARNING_PROACTIVE : MODE_LEARNING_PASSIVE);
@@ -127,7 +133,7 @@ export function assembleInterviewerPrompt(options) {
     helpMode, probeCap, probesAsked,
   });
   const blocks = [
-    PERSONA,
+    personaBlock(persona),
     problemBlock(problem),
   ];
   if (brief) blocks.push(brief);

@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=33');
-              const context = await import('./js/context.js?v=33');
-              const assemble = await import('./js/prompts/assemble.js?v=33');
+              const state = await import('./js/state.js?v=34');
+              const context = await import('./js/context.js?v=34');
+              const assemble = await import('./js/prompts/assemble.js?v=34');
               const out = {};
 
               const problem = {
@@ -112,9 +112,9 @@ def main():
               out.learningProactive = learnPro[0].content.includes('ONE gentle pointer');
 
               // ---- interviewer brief: validation, block, gates, probe lines
-              const briefMod = await import('./js/prompts/brief.js?v=33');
-              const engineMod = await import('./js/engine.js?v=33');
-              const pack = await (await fetch('./js/problems/url-shortener.json?v=33')).json();
+              const briefMod = await import('./js/prompts/brief.js?v=34');
+              const engineMod = await import('./js/engine.js?v=34');
+              const pack = await (await fetch('./js/problems/url-shortener.json?v=34')).json();
               out.briefValidates = (() => {
                 try { briefMod.validateBrief(pack); return true; } catch (e) { return 'threw: ' + e.message; }
               })();
@@ -181,7 +181,7 @@ def main():
               const packs = {};
               const packErrs = {};
               for (const slug of bankSlugs) {
-                const resp = await fetch(`./js/problems/${slug}.json?v=33`);
+                const resp = await fetch(`./js/problems/${slug}.json?v=34`);
                 const pb = await resp.json();
                 const brief = pb.interviewer_brief;
                 let valid = false;
@@ -204,7 +204,7 @@ def main():
 
               // one turn = prose, $$latex$$, and ```mermaid fences in any
               // combination; parseTurn splits it into ordered segments
-              const tp = await import('./js/turn-parse.js?v=33');
+              const tp = await import('./js/turn-parse.js?v=34');
               const p1 = tp.parseTurn('Just a plain answer.');
               const p2 = tp.parseTurn('The answer:\\n$$Q = 100 \\cdot 86400$$\\nThat is the rate.');
               const p3 = tp.parseTurn('Sketch:\\n```mermaid\\ngraph LR\\nA-->B\\n```\\nIt flows.');
@@ -233,7 +233,7 @@ def main():
               // game code (DESIGN.md 5.2): reasoning_effort for OpenAI-style
               // calls, a thinking budget for Anthropic-style calls, nothing
               // for the mock
-              const prov = await import('./js/providers.js?v=33');
+              const prov = await import('./js/providers.js?v=34');
               const tp2 = (cfg) => prov.thinkingParams(cfg);
               // off = reasoning disabled (none), default = omit the field
               // (provider picks; defaults are model-dependent). Ladder

@@ -6,7 +6,7 @@
 // Game code inspects the checker reply's shape before anything reaches
 // the ledger.
 
-import { extractJsonObject } from '../json-reply.js?v=33';
+import { extractJsonObject } from '../json-reply.js?v=34';
 
 const CHECK_RULES = `You audit one reply from a technical interviewer. The
 reply may have stated some of the hidden guidance items listed below. Decide

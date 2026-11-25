@@ -13,6 +13,7 @@ on:
     paths:
       - game/index.html
       - game/css/**
+      - game/fonts/**
       - game/js/**
       - .github/workflows/static.yml
   workflow_dispatch:
@@ -42,12 +43,14 @@ jobs:
       - name: Stage the game (runtime files only)
         run: |
           mkdir _site
-          cp --recursive game/index.html game/css game/js _site/
+          cp --recursive game/index.html game/css game/fonts game/js _site/
           test -f _site/index.html
           test -f _site/css/main.css
           test -f _site/js/app.js
           test -f _site/js/prompts/mock-script.json
           test -f _site/js/problems/url-shortener.json
+          test -f _site/fonts/PressStart2P-Regular.ttf
+          test -f _site/fonts/OFL.txt
           test -f _site/js/vendor/katex.min.js
           test -f _site/js/vendor/katex.min.css
           test -f _site/js/vendor/mermaid.min.js

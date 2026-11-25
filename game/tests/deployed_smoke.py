@@ -65,6 +65,7 @@ def main():
         # again, so the steps of Driver.start_session stand here without
         # the navigation.
         page.evaluate("() => localStorage.removeItem('tadsdi.session.v1')")
+        page.select_option("#persona-select", "klingon")
         page.select_option("#problem-select", "url-shortener")
         page.select_option("#help-mode", "learning")
         page.select_option("#constraint-mode", "unconstrained")
@@ -73,6 +74,17 @@ def main():
         page.wait_for_selector("#chat-log .chat-message.interviewer", timeout=15000)
         page.wait_for_function(
             "() => document.getElementById('send-btn').disabled === false")
+        persona = page.evaluate(
+            "() => document.getElementById('screen-interview').className")
+        assert "persona-klingon" in persona, persona
+        portrait = page.evaluate("""() => {
+          const c = document.getElementById('persona-portrait');
+          const d = c.getContext('2d').getImageData(0, 0, 16, 16).data;
+          let painted = 0;
+          for (let i = 3; i < d.length; i += 4) { if (d[i] > 0) painted += 1; }
+          return painted;
+        }""")
+        assert portrait > 40, f"the portrait never painted: {portrait}"
         assert page.locator("#timer-hud").is_hidden(), "timer shows with the timer option off"
         d.send("About ten million writes per day, as a ballpark.")
         # The first hint of the mock script reveals hidden guidance item 2.

@@ -1,9 +1,13 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=33';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=33';
-import { initExport } from './export.js?v=33';
-import { loadProblems } from './problems.js?v=33';
+import { initSettings, howToAtStart, setHowToAtStart, loadSettings,
+  saveSettings } from './settings.js?v=34';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=34';
+import { initExport } from './export.js?v=34';
+import { loadProblems } from './problems.js?v=34';
+import { PERSONA_IDS, PERSONAS } from './personas.js?v=34';
+import { applyPersona, startPortraitLoop, stopPortraitLoop } from './persona-art.js?v=34';
+import { BlipVoice, setBlipVoice } from './audio.js?v=34';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -100,6 +104,70 @@ function pickProblemSlug(slug) {
   return available[Math.floor(Math.random() * available.length)][0];
 }
 
+// ---- persona ------------------------------------------------------------
+
+function initPersonaSelect() {
+  const select = el('persona-select');
+  select.innerHTML = PERSONA_IDS
+    .map((id) => `<option value="${id}">${PERSONAS[id].name}</option>`)
+    .join('');
+  select.value = loadSettings().preferences.persona || 'normal';
+  select.addEventListener('change', () => {
+    const settings = loadSettings();
+    settings.preferences.persona = select.value;
+    saveSettings(settings);
+  });
+}
+
+function savePreference(key, value) {
+  const settings = loadSettings();
+  settings.preferences[key] = value;
+  saveSettings(settings);
+}
+
+// The voice and the portrait come up with the interview screen. The
+// AudioContext is created on the start click, which is a user gesture.
+let activePersona = 'normal';
+
+function setupPersonaStage(personaId) {
+  activePersona = personaId;
+  const screenEl = el('screen-interview');
+  const persona = applyPersona(screenEl, personaId);
+  el('persona-name').textContent = persona.name;
+  startPortraitLoop(el('persona-portrait'), personaId);
+  const muted = loadSettings().preferences.voiceMuted === true;
+  el('voice-mute').textContent = muted ? 'Voice: off' : 'Voice: on';
+  const Ctx = window.AudioContext;
+  if (Ctx) setBlipVoice(new BlipVoice(new Ctx(), persona, { muted }));
+}
+
+function onVoiceMuteClick() {
+  const muted = loadSettings().preferences.voiceMuted !== true;
+  savePreference('voiceMuted', muted);
+  el('voice-mute').textContent = muted ? 'Voice: off' : 'Voice: on';
+  const Ctx = window.AudioContext;
+  if (Ctx) {
+    setBlipVoice(new BlipVoice(new Ctx(),
+      PERSONAS[loadSettings().preferences.persona || 'normal'], { muted }));
+  }
+}
+
+// The portrait loop runs an interval; it follows the interview screen.
+// Entering the interview starts it, any other screen stops it, so no
+// timer outlives the screen.
+function onScreenChange(event) {
+  if (event.detail === 'interview') {
+    startPortraitLoop(el('persona-portrait'), activePersona);
+  } else {
+    stopPortraitLoop();
+  }
+}
+
+function initVoiceMute() {
+  el('voice-mute').addEventListener('click', onVoiceMuteClick);
+  document.addEventListener('tadsdi:screen', onScreenChange);
+}
+
 async function startFromMenu() {
   const slug = pickProblemSlug(selectedProblemSlug());
   if (!slug) {
@@ -111,9 +179,11 @@ async function startFromMenu() {
     constraintMode: el('constraint-mode').value,
     proactiveHints: el('proactive-guidance').value === 'on',
     maxProbesPerStep: Number(el('probe-cap').value) || 0,
+    persona: el('persona-select').value,
   };
   const timerMinutes = Number(el('timer-preset').value) || 0;
   el('menu-status').textContent = '';
+  setupPersonaStage(prefs.persona);
   await startInterview(problems.get(slug), prefs, timerMinutes);
 }
 
@@ -176,6 +246,8 @@ export function initApp() {
   };
   el('help-mode').addEventListener('change', syncProactive);
   syncProactive();
+  initPersonaSelect();
+  initVoiceMute();
   // loadProblems never rejects: an entry that fails to load is null.
   loadProblems().then((map) => {
     problems = map;
