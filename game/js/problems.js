@@ -1,6 +1,6 @@
 // TADSDI problems.js: problem bank loader (DESIGN.md 5.1).
 
-import { validateBrief } from './prompts/brief.js?v=31';
+import { validateBrief } from './prompts/brief.js?v=32';
 
 export const PROBLEM_SLUGS = [
   'url-shortener',
@@ -19,7 +19,7 @@ const cache = new Map();
 // that carries one gets it validated here, at load time (DESIGN.md 7).
 export async function loadProblem(slug) {
   if (cache.has(slug)) return cache.get(slug);
-  const url = new URL(`problems/${slug}.json?v=31`, import.meta.url).href;
+  const url = new URL(`problems/${slug}.json?v=32`, import.meta.url).href;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`problem bank entry not found: ${slug} (HTTP ${response.status})`);

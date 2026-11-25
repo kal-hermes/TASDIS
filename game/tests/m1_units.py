@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=31');
-              const context = await import('./js/context.js?v=31');
-              const assemble = await import('./js/prompts/assemble.js?v=31');
+              const state = await import('./js/state.js?v=32');
+              const context = await import('./js/context.js?v=32');
+              const assemble = await import('./js/prompts/assemble.js?v=32');
               const out = {};
 
               const problem = {
@@ -112,9 +112,9 @@ def main():
               out.learningProactive = learnPro[0].content.includes('ONE gentle pointer');
 
               // ---- interviewer brief: validation, block, gates, probe lines
-              const briefMod = await import('./js/prompts/brief.js?v=31');
-              const engineMod = await import('./js/engine.js?v=31');
-              const pack = await (await fetch('./js/problems/url-shortener.json?v=31')).json();
+              const briefMod = await import('./js/prompts/brief.js?v=32');
+              const engineMod = await import('./js/engine.js?v=32');
+              const pack = await (await fetch('./js/problems/url-shortener.json?v=32')).json();
               out.briefValidates = (() => {
                 try { briefMod.validateBrief(pack); return true; } catch (e) { return 'threw: ' + e.message; }
               })();
@@ -181,7 +181,7 @@ def main():
               const packs = {};
               const packErrs = {};
               for (const slug of bankSlugs) {
-                const resp = await fetch(`./js/problems/${slug}.json?v=31`);
+                const resp = await fetch(`./js/problems/${slug}.json?v=32`);
                 const pb = await resp.json();
                 const brief = pb.interviewer_brief;
                 let valid = false;
@@ -201,6 +201,56 @@ def main():
               }
               out.packs = packs;
               out.packErrs = packErrs;
+
+              // one turn = prose, $$latex$$, and ```mermaid fences in any
+              // combination; parseTurn splits it into ordered segments
+              const tp = await import('./js/turn-parse.js?v=32');
+              const p1 = tp.parseTurn('Just a plain answer.');
+              const p2 = tp.parseTurn('The answer:\\n$$Q = 100 \\cdot 86400$$\\nThat is the rate.');
+              const p3 = tp.parseTurn('Sketch:\\n```mermaid\\ngraph LR\\nA-->B\\n```\\nIt flows.');
+              const p4 = tp.parseTurn('$$x^2$$');
+              const p5 = tp.parseTurn('```mermaid\\ngraph TD\\nB-->A\\n```');
+              const p6 = tp.parseTurn('Intro\\n```mermaid\\ngraph LR\\nA-->B\\n```\\nMid\\n$$y = 2x$$\\nOut');
+              const p7 = tp.parseTurn('```mermaid\\ngraph LR\\nA-->B');
+              const p8 = tp.parseTurn('The value $$x^2 is big');
+              const p9 = tp.parseTurn('   \\n  ');
+              const types = (r) => JSON.stringify(r.segments.map((s) => s.type));
+              out.turnParse = {
+                proseOnly: types(p1) === '["prose"]' && p1.segments[0].text === 'Just a plain answer.',
+                prosePlusLatex: types(p2) === '["prose","latex","prose"]',
+                latexSource: p2.segments[1].source === 'Q = 100 \\cdot 86400',
+                prosePlusMermaid: types(p3) === '["prose","mermaid","prose"]',
+                mermaidSource: p3.segments[1].source === 'graph LR\\nA-->B',
+                latexOnly: types(p4) === '["latex"]',
+                mermaidOnly: types(p5) === '["mermaid"]',
+                orderKept: types(p6) === '["prose","mermaid","prose","latex","prose"]',
+                unclosedFenceProse: types(p7) === '["prose"]',
+                unbalancedDollarProse: types(p8) === '["prose"]',
+                blank: p9.segments.length === 0,
+              };
+
+              // the thinking-effort setting maps to request parameters in
+              // game code (DESIGN.md 5.2): reasoning_effort for OpenAI-style
+              // calls, a thinking budget for Anthropic-style calls, nothing
+              // for the mock
+              const prov = await import('./js/providers.js?v=32');
+              const tp2 = (cfg) => prov.thinkingParams(cfg);
+              out.thinking = {
+                mockOff: JSON.stringify(tp2({ provider: 'mock', thinkingEffort: 'low' })) === '{}',
+                openaiLow: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'low' }))
+                  === JSON.stringify({ reasoning_effort: 'low' }),
+                openaiCompatHigh: JSON.stringify(tp2({ provider: 'openai-compatible', thinkingEffort: 'high' }))
+                  === JSON.stringify({ reasoning_effort: 'high' }),
+                openaiOff: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: '' })) === '{}',
+                anthropicLow: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'low' }))
+                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 2048 }, max_tokens: 3072 }),
+                anthropicMedium: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'medium' }))
+                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 8192 }, max_tokens: 9216 }),
+                anthropicHigh: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'high' }))
+                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 16384 }, max_tokens: 17408 }),
+                anthropicOff: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: '' })) === '{}',
+                unknownEffort: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'turbo' })) === '{}',
+              };
 
               const briefing = assemble.assembleBriefingMessages({problem});
               out.briefingTurns = briefing.length;
@@ -269,6 +319,17 @@ def main():
                           "web-crawler": True, "unique-id-generator": True,
                           "notification-system": True},
                 "packErrs": {},
+                "thinking": {"mockOff": True, "openaiLow": True,
+                             "openaiCompatHigh": True, "openaiOff": True,
+                             "anthropicLow": True, "anthropicMedium": True,
+                             "anthropicHigh": True, "anthropicOff": True,
+                             "unknownEffort": True},
+                "turnParse": {"proseOnly": True, "prosePlusLatex": True,
+                              "latexSource": True, "prosePlusMermaid": True,
+                              "mermaidSource": True, "latexOnly": True,
+                              "mermaidOnly": True, "orderKept": True,
+                              "unclosedFenceProse": True,
+                              "unbalancedDollarProse": True, "blank": True},
                 "briefingTurns": 2,
                 "context": {"systemBlocks": 3, "hasLedger": True, "hasTracker": True,
                             "anchorInstruction": True,

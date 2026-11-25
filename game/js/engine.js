@@ -8,14 +8,15 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=31';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=31';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=31';
-import { assembleContext, compressIfNeeded } from './context.js?v=31';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=31';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=31';
-import { renderLatex } from './render-latex.js?v=31';
-import { renderMermaid } from './render-mermaid.js?v=31';
+} from './state.js?v=32';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=32';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=32';
+import { assembleContext, compressIfNeeded } from './context.js?v=32';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=32';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=32';
+import { parseTurn } from './turn-parse.js?v=32';
+import { renderLatex } from './render-latex.js?v=32';
+import { renderMermaid } from './render-mermaid.js?v=32';
 
 let session = null;
 let busy = false;
@@ -105,6 +106,8 @@ function renderArtifact(artifact) {
   head.textContent = `${artifact.kind.toUpperCase()} artifact (step ${artifact.step})`;
   const body = document.createElement('div');
   body.className = 'artifact-body';
+  // The renderers never throw: a source they reject renders as .render-error
+  // inside the body, next to the raw source, so the chat never breaks.
   if (artifact.kind === 'latex') {
     renderLatex(body, artifact.source);
   } else if (artifact.kind === 'mermaid') {
@@ -376,12 +379,26 @@ function enterInterviewScreen() {
 
 async function sendTurn(text) {
   if (!candidateTurn()) return;
-  const trimmed = text.trim();
-  if (!trimmed) return;
-  addMessage(session, 'candidate', trimmed);
+  // One turn is one input: prose, $$latex$$ blocks, and ```mermaid fences
+  // in any mix and order. Each block becomes an artifact attached to the
+  // current step; the prose rides as candidate messages (DESIGN.md 8).
+  const { segments } = parseTurn(text);
+  if (!segments.length) return;
+  for (const segment of segments) {
+    if (segment.type === 'prose') {
+      addMessage(session, 'candidate', segment.text);
+      chatMessageEl('candidate', segment.text);
+    } else {
+      const artifact = addArtifact(session, {
+        kind: segment.type, source: segment.source, step: session.currentStep,
+      });
+      renderArtifact(artifact);
+    }
+  }
   saveSession(session);
-  chatMessageEl('candidate', trimmed);
-  const help = /\b(hint|help|stuck|clue|what would you (do|look))\b/i.test(trimmed);
+  const prose = segments.filter((s) => s.type === 'prose')
+    .map((s) => s.text).join('\n\n');
+  const help = /\b(hint|help|stuck|clue|what would you (do|look))\b/i.test(prose);
   if (help) {
     if (session.helpMode === 'testing') {
       await runLlmTurn({ purpose: 'help', helpRequest: 'refusal' });
@@ -391,15 +408,6 @@ async function sendTurn(text) {
   } else {
     await runLlmTurn({ purpose: 'interview' });
   }
-}
-
-async function submitArtifact(kind, source) {
-  if (!candidateTurn()) return null;
-  const artifact = addArtifact(session, { kind, source, step: session.currentStep });
-  saveSession(session);
-  renderArtifact(artifact);
-  await runLlmTurn({ purpose: 'interview' });
-  return artifact;
 }
 
 async function wrapup(timeUpNote) {
@@ -528,7 +536,9 @@ function onSendClicked() {
 }
 
 function onInputKeydown(event) {
-  if (event.key === 'Enter' && !el('send-btn').disabled) {
+  // Enter sends; Shift+Enter makes a newline inside the textarea.
+  if (event.key === 'Enter' && !event.shiftKey && !el('send-btn').disabled) {
+    event.preventDefault();
     el('send-btn').click();
   }
 }
@@ -585,4 +595,4 @@ export function getEngineSession() {
   return session;
 }
 
-export { startInterview, submitArtifact };
+export { startInterview };

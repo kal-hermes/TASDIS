@@ -80,8 +80,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=31');
-              const exp = await import(base + 'js/export.js?v=31');
+              const state = await import(base + 'js/state.js?v=32');
+              const exp = await import(base + 'js/export.js?v=32');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',
@@ -160,7 +160,7 @@ def main():
             # button for the rest of the session. Steps unmarked: the
             # candidate can still end.
             page.evaluate("""async ([base, key]) => {
-              const state = await import(base + 'js/state.js?v=31');
+              const state = await import(base + 'js/state.js?v=32');
               const problem = await (await fetch(base + 'js/problems/url-shortener.json')).json();
               const session = state.newSession(problem, { helpMode: 'learning' });
               state.addMessage(session, 'interviewer', 'Here is the problem. Over to you.');
@@ -197,9 +197,61 @@ def main():
             assert stored['probesUsed'] == {}, stored.get('probesUsed')
             print('  ok   probe cap: select 0-5, default 2, frozen in testing, rides the session')
 
+            # ---- G. one input for a whole turn: prose, $$latex$$, and
+            # ```mermaid fences typed together; the submission panel is gone
+            d.start_session(help_mode='learning')
+            assert page.eval_on_selector(
+                '#candidate-input', 'e => e.tagName') == 'TEXTAREA', \
+                'the candidate input must be a multi-line textarea'
+            for gone in ['artifact-source', 'artifact-submit', 'submission-tabs',
+                         'submission-panel', 'tab-btn-latex', 'tab-btn-mermaid',
+                         'tab-btn-prose']:
+                assert page.locator(f'#{gone}').count() == 0, \
+                    f'#{gone} must be gone with the submission panel'
+            mixed = ('Scale first.\n\n$$QPS = 1160$$\n\n'
+                     '```mermaid\ngraph LR\nA-->B\n```')
+            d.send(mixed)
+            page.wait_for_selector('#chat-log .chat-message.artifact .katex',
+                                   timeout=10000)
+            page.wait_for_selector('#chat-log .chat-message.artifact svg',
+                                   timeout=10000)
+            s = d.stored_session()
+            kinds = sorted(a['kind'] for a in s['artifacts'])
+            assert kinds == ['latex', 'mermaid'], kinds
+            texts = [m['text'] for m in s['transcript'] if m['speaker'] == 'candidate']
+            assert any('Scale first.' in t for t in texts), texts
+            # one turn produced exactly one interviewer reply after the artifacts
+            assert s['transcript'][-1]['speaker'] == 'interviewer', s['transcript'][-1]
+            print('  ok   unified turn: prose + latex + mermaid in one send')
+
+            # ---- H. thinking effort per provider row; the context-window
+            # field is gone (a reasoning-effort dropdown replaces it)
+            d.open_menu()
+            page.click('#open-settings')
+            page.wait_for_selector('#settings-dialog[open]')
+            assert page.locator('#context-tokens').count() == 0, \
+                'the context-window field must be gone'
+            rows = page.eval_on_selector_all(
+                '#provider-rows tbody tr',
+                "els => els.map(e => [e.dataset.role,"
+                " e.querySelector('select.thinking-effort')?.value])")
+            assert [r[0] for r in rows] == ['text', 'vision', 'image'], rows
+            assert all(r[1] == 'off' for r in rows), rows
+            page.select_option(
+                '#provider-rows tbody tr[data-role="text"] select.thinking-effort',
+                'medium')
+            page.click('#settings-save')
+            page.wait_for_timeout(300)
+            stored = page.evaluate(
+                f"key => JSON.parse(localStorage.getItem(key)).roles", SETTINGS_KEY)
+            assert stored['text']['thinkingEffort'] == 'medium', stored['text']
+            assert stored['vision']['thinkingEffort'] == 'off', stored['vision']
+            page.click('#settings-close')
+            print('  ok   thinking effort: per-row select, off default, persists')
+
             assert not errors, f"console/page errors: {errors}"
             browser.close()
-        print("M3 UI: PASS (how to play, transcript export, end control, probe cap)")
+        print("M3 UI: PASS (how to play, transcript export, end control, probe cap, unified turn)")
         return 0
     finally:
         server.terminate()

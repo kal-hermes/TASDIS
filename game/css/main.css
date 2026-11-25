@@ -120,35 +120,9 @@ header {
 
 #candidate-input {
   flex: 1;
-}
-
-#submission-panel {
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-}
-
-#submission-tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-#submission-tabs button.active {
-  font-weight: 700;
-  text-decoration: underline;
-}
-
-#artifact-source {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#artifact-preview {
-  min-height: 3rem;
-  border: 1px dashed #ccc;
-  padding: 0.5rem;
-  margin: 0.5rem 0;
-  overflow-x: auto;
+  resize: vertical;
+  min-height: 3.5rem;
+  font: inherit;
 }
 
 #provider-rows td { padding: 0.25rem; }

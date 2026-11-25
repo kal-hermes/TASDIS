@@ -34,12 +34,12 @@ def set_text_role(page, **fields):
 
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=31');
-  const context = await import(base + 'js/context.js?v=31');
-  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=31');
-  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=31');
-  const providers = await import(base + 'js/providers.js?v=31');
-  const settings = await import(base + 'js/settings.js?v=31');
+  const state = await import(base + 'js/state.js?v=32');
+  const context = await import(base + 'js/context.js?v=32');
+  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=32');
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=32');
+  const providers = await import(base + 'js/providers.js?v=32');
+  const settings = await import(base + 'js/settings.js?v=32');
   const out = {};
   const CTX = 16000;  // tokens: a mid-size window that a long transcript outgrows
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
@@ -157,13 +157,19 @@ UNITS = """async (base) => {
   providers.setMockFaultQueue([]);
 
   // 10. the context window is a Settings field of the text role
-  out.settingsDefault = settings.loadSettings().roles.text.contextTokens;
+  // the thinking effort rides each role; the default is off (DESIGN.md 5.2).
+  // The old context-window field is gone, so 32000 tokens always applies
+  // unless a stored blob still carries contextTokens.
+  out.settingsDefault = settings.loadSettings().roles.text.thinkingEffort;
   const saved = settings.loadSettings();
-  saved.roles.text.contextTokens = 64000;
+  saved.roles.text.thinkingEffort = 'high';
   settings.saveSettings(saved);
-  out.settingsRead = providers.textContextTokens();
-  saved.roles.text.contextTokens = 0;
+  out.settingsRead = settings.loadSettings().roles.text.thinkingEffort;
+  saved.roles.text.thinkingEffort = 'off';
   settings.saveSettings(saved);
+  // 0 means: no stored limit, so the 32000-token game default applies in
+  // the context layer.
+  out.defaultTokens = providers.textContextTokens();
 
   // 11. the summarizer prompt
   const system = sum.buildSummarizeMessages(big, { from: 0, to: 2 })[0].content;
@@ -172,7 +178,7 @@ UNITS = """async (base) => {
 
   // 12. the probe budget anchor rides the head only when it applies
   try {
-  const pack = await (await fetch(base + 'js/problems/url-shortener.json?v=31')).json();
+  const pack = await (await fetch(base + 'js/problems/url-shortener.json?v=32')).json();
   const probeSession = (helpMode, cap) => {
     const s = state.newSession(pack, { helpMode });
     s.maxProbesPerStep = cap;
@@ -260,8 +266,10 @@ def main():
             expect("faults: a fault can name the call it fails",
                    "HTTP 500" in out["faults"][1] and "network or CORS" in out["faults"][0]
                    and out["faults"][2] == "ok" and out["faults"][3] == "ok", out["faults"])
-            expect("settings: context window defaults to 0 and reads back",
-                   out["settingsDefault"] == 0 and out["settingsRead"] == 64000, out)
+            expect("settings: thinking effort defaults to off and reads back",
+                   out["settingsDefault"] == 'off' and out["settingsRead"] == 'high', out)
+            expect("context window: no stored limit means 0 (the 32000 default applies)",
+                   out["defaultTokens"] == 0, out["defaultTokens"])
             expect("prompt: strict JSON, adds nothing, keeps numbers with units",
                    out["prompt"] == {"json": True, "addsNothing": True, "keepsNumbers": True}, out["prompt"])
             expect("probe budget anchor: learning sees it, testing and cap 0 and no brief do not",
@@ -293,7 +301,7 @@ def main():
             assert any(e["status"] == "summarized" for e in s["ledger"]["estimates"]), s["ledger"]
             assert page.locator("#engine-status").inner_text() == "", "status shows a failure"
             assembly = page.evaluate("""async ([base, session, tokens]) => {
-              const context = await import(base + 'js/context.js?v=31');
+              const context = await import(base + 'js/context.js?v=32');
               return context.assembleContext(session, { contextTokens: tokens })
                 .map((m) => m.content);
             }""", [MODULES, s, SMALL_CONTEXT])
@@ -308,7 +316,7 @@ def main():
             d.start_session(help_mode="learning")
             set_text_role(page, contextTokens=SMALL_CONTEXT)
             page.evaluate("""async ([base, n]) => {
-              const providers = await import(base + 'js/providers.js?v=31');
+              const providers = await import(base + 'js/providers.js?v=32');
               providers.setMockFaultQueue(Array.from({ length: n }, () => (
                 { kind: 'http', status: 500, purpose: 'summarize' })));
             }""", [MODULES, 5])

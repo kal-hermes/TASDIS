@@ -80,25 +80,30 @@ class Driver:
         page.wait_for_selector("#interview-busy", state="hidden", timeout=15000)
 
     def send(self, text):
+        before = self.page.evaluate(
+            "() => document.querySelectorAll('#chat-log .chat-message.interviewer').length")
         self.page.fill("#candidate-input", text)
         self.page.click("#send-btn")
-        self.wait_reply()
+        self.wait_reply(before)
 
-    def wait_reply(self):
-        # send becomes disabled while busy, then re-enabled after the reply
+    def wait_reply(self, before=None):
+        # A short mock reply can finish before the first poll observes the
+        # disabled window, so wait on observable effects: one more
+        # interviewer bubble than `before`, then the input enabled again.
+        if before is None:
+            before = self.page.evaluate(
+                "() => document.querySelectorAll('#chat-log .chat-message.interviewer').length") - 1
         self.page.wait_for_function(
-            "() => document.getElementById('send-btn').disabled === true", timeout=5000)
+            "(n) => document.querySelectorAll('#chat-log .chat-message.interviewer').length > n",
+            arg=before, timeout=20000)
         self.page.wait_for_function(
             "() => document.getElementById('send-btn').disabled === false", timeout=20000)
 
     def submit_mermaid(self):
-        page = self.page
-        page.click("#tab-btn-mermaid")
-        page.fill("#artifact-source", MERMAID_SOURCE)
-        page.wait_for_selector("#artifact-preview svg", timeout=10000)
-        page.click("#artifact-submit")
-        page.wait_for_selector("#chat-log .chat-message.artifact", timeout=10000)
-        self.wait_reply()
+        # one turn: the fenced diagram typed straight into the input
+        self.send("```mermaid\n" + MERMAID_SOURCE + "\n```")
+        self.page.wait_for_selector(
+            "#chat-log .chat-message.artifact", timeout=10000)
 
     def stored_session(self):
         raw = self.page.evaluate(f"() => localStorage.getItem('{SESSION_KEY}')")

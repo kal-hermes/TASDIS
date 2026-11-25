@@ -2,13 +2,14 @@
 // Schema per DESIGN.md section 5.2. Keys stay in localStorage and ride
 // only in the Authorization header to the provider (D9).
 
-import { complete } from './providers.js?v=31';
+import { complete } from './providers.js?v=32';
 
 export const SETTINGS_KEY = 'tadsdi.settings.v1';
 export const PROVIDER_ROLES = ['text', 'vision', 'image'];
 export const PROVIDER_IDS = ['mock', 'openai', 'anthropic', 'openai-compatible'];
 
-const DEFAULT_ROLE = { provider: 'mock', baseUrl: '', model: '', apiKey: '', contextTokens: 0 };
+const DEFAULT_ROLE = { provider: 'mock', baseUrl: '', model: '', apiKey: '',
+  thinkingEffort: 'off' };
 
 function defaultSettings() {
   return {
@@ -62,6 +63,9 @@ function rowTemplate(role) {
   const options = PROVIDER_IDS
     .map((id) => `<option value="${id}">${id}</option>`)
     .join('');
+  const efforts = ['off', 'low', 'medium', 'high']
+    .map((e) => `<option value="${e}">${e}</option>`)
+    .join('');
   return `
     <tr data-role="${role}">
       <th scope="row">${role}</th>
@@ -69,6 +73,7 @@ function rowTemplate(role) {
       <td><input class="base-url" type="text" placeholder="https://..."></td>
       <td><input class="model" type="text"></td>
       <td><input class="api-key" type="password" placeholder="optional"></td>
+      <td><select class="thinking-effort">${efforts}</select></td>
       <td>
         <button type="button" class="test-connection">Test connection</button>
         <div class="test-result" role="status"></div>
@@ -82,6 +87,7 @@ function fillRow(tbody, role, config) {
   row.querySelector('input.base-url').value = config.baseUrl || '';
   row.querySelector('input.model').value = config.model || '';
   row.querySelector('input.api-key').value = config.apiKey || '';
+  row.querySelector('select.thinking-effort').value = config.thinkingEffort || 'off';
 }
 
 function collectRow(row) {
@@ -90,6 +96,7 @@ function collectRow(row) {
     baseUrl: row.querySelector('input.base-url').value.trim(),
     model: row.querySelector('input.model').value.trim(),
     apiKey: row.querySelector('input.api-key').value,
+    thinkingEffort: row.querySelector('select.thinking-effort').value || 'off',
   };
 }
 
@@ -111,17 +118,9 @@ async function testRowConnection(row, setMessage) {
   }
 }
 
-// The context window of the text model, in tokens. 0 means: use the game
-// default. Only the text role uses it, so it is one field under the table.
-function fillContextField() {
-  const tokens = loadSettings().roles.text.contextTokens;
-  document.getElementById('context-tokens').value = tokens ? String(tokens) : '';
-}
-
-function readContextField() {
-  return Number(document.getElementById('context-tokens').value) || 0;
-}
-
+// The thinking effort rides on each role config (DESIGN.md 5.2). The old
+// context-window field is gone: the game default of 32000 tokens always
+// applies unless a stored settings blob still carries contextTokens.
 export function initSettings() {
   const dialog = document.getElementById('settings-dialog');
   const tbody = dialog.querySelector('#provider-rows tbody');
@@ -130,7 +129,6 @@ export function initSettings() {
   const fillFromStorage = () => {
     const settings = loadSettings();
     for (const role of PROVIDER_ROLES) fillRow(tbody, role, settings.roles[role]);
-    fillContextField();
   };
 
   document.getElementById('open-settings').addEventListener('click', () => {
@@ -146,7 +144,6 @@ export function initSettings() {
     for (const row of tbody.querySelectorAll('tr[data-role]')) {
       settings.roles[row.dataset.role] = collectRow(row);
     }
-    settings.roles.text.contextTokens = readContextField();
     saveSettings(settings);
     dialog.querySelector('#settings-message').textContent = 'Saved to localStorage.';
   });

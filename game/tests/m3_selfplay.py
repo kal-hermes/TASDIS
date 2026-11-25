@@ -40,7 +40,7 @@ OPENAI_API = "**/fake/v1/chat/completions"
 def queue_faults(page, faults):
     page.evaluate(
         """async ([base, faults]) => {
-          const providers = await import(base + 'js/providers.js?v=31');
+          const providers = await import(base + 'js/providers.js?v=32');
           providers.setMockFaultQueue(faults);
         }""", [MODULES, faults])
 
@@ -122,41 +122,27 @@ def run_clean(d, page):
     assert len(transcript(page)) == before, "an empty message reached the transcript"
     assert page.locator("#send-btn").is_enabled()
 
-    # LaTeX: live preview, KaTeX in the chat, and the render error path
-    page.click("#tab-btn-latex")
-    page.fill("#artifact-source", "QPS = 1160")
-    page.wait_for_selector("#artifact-preview .katex", timeout=10000)
-    page.click("#artifact-submit")
+    # LaTeX typed into the input; the render error path degrades to the source
+    d.send("$$QPS = 1160$$")
     page.wait_for_selector("#chat-log .chat-message.artifact .katex", timeout=10000)
     d.wait_reply()
-    page.fill("#artifact-source", "\\frac{")
-    page.wait_for_selector("#artifact-preview .render-error", timeout=10000)
-    assert "KaTeX error" in page.locator("#artifact-preview .render-error").inner_text()
-    page.click("#artifact-submit")
+    d.send("$$\\frac{$$")
+    page.wait_for_selector("#chat-log .chat-message.artifact .render-error", timeout=10000)
+    assert "KaTeX error" in page.locator(
+        "#chat-log .chat-message.artifact .render-error").inner_text()
+    d.wait_reply()
+
+    # Mermaid typed into the input: a bad source renders the error, a good one draws
+    d.send("```mermaid\nbanana\n```")
     page.wait_for_selector("#chat-log .chat-message.artifact .render-error", timeout=10000)
     d.wait_reply()
-
-    # Mermaid: render error path, then a diagram; a double submit adds one artifact
-    page.click("#tab-btn-mermaid")
-    page.fill("#artifact-source", "banana")
-    page.wait_for_selector("#artifact-preview .render-error", timeout=10000)
-    page.fill("#artifact-source", MERMAID_SOURCE)
-    page.wait_for_selector("#artifact-preview svg", timeout=10000)
-    artifacts_before = len(d.stored_session()["artifacts"])
-    page.click("#artifact-submit")
-    page.evaluate("() => document.getElementById('artifact-submit').click()")
+    d.send("```mermaid\n" + MERMAID_SOURCE + "\n```")
     page.wait_for_selector("#chat-log .chat-message.artifact svg", timeout=10000)
     d.wait_reply()
-    assert len(d.stored_session()["artifacts"]) == artifacts_before + 1, "a double submit added two artifacts"
 
-    # Prose
-    page.click("#tab-btn-prose")
-    page.fill("#artifact-source", "Decision: one primary database.")
-    page.click("#artifact-submit")
-    d.wait_reply()
     s = d.stored_session()
     kinds = sorted(a["kind"] for a in s["artifacts"])
-    assert kinds == ["latex", "latex", "mermaid", "prose"], kinds
+    assert kinds == ["latex", "latex", "mermaid", "mermaid"], kinds
     assert s["ledger"]["estimates"] and s["ledger"]["components"], s["ledger"]
 
     # Help ladder: two requests, two different replies, both marked as help
@@ -173,7 +159,7 @@ def run_clean(d, page):
     page.click("#request-midgrade")
     page.wait_for_selector("#midgrade-snapshots li", timeout=20000)
     mid = export_text(page, "export-transcript")
-    for fence in ["```latex", "```mermaid", "```text"]:
+    for fence in ["```latex", "```mermaid"]:
         assert fence in mid, f"mid-interview export lacks {fence}"
     assert "## Progress reports" in mid and "## Grade" not in mid
 
@@ -223,11 +209,10 @@ def run_with_faults(d, page):
     wait_ready(page)
     assert d.stored_session()["transcript"][-1].get("helpReply") is True
 
-    # 3. an artifact submission that gets an empty reply
-    page.click("#tab-btn-mermaid")
-    page.fill("#artifact-source", MERMAID_SOURCE)
+    # 3. a diagram turn that gets an empty reply
+    page.fill("#candidate-input", "```mermaid\n" + MERMAID_SOURCE + "\n```")
     queue_faults(page, ["empty"])
-    page.click("#artifact-submit")
+    page.click("#send-btn")
     page.wait_for_selector("#chat-log .chat-message.artifact", timeout=10000)
     assert "empty reply" in notice_text(page)
     page.locator("#chat-log .notice.error .retry-btn").click()
@@ -320,6 +305,14 @@ def run_edges(d, page, errors):
     ping = anthropic_requests[-1]["body"]
     assert "stream" not in ping and "system" not in ping, ping
     assert ping["messages"] == [{"role": "user", "content": "ping"}], ping
+    assert "thinking" not in ping, ping
+    page.select_option(f"{row} select.thinking-effort", "medium")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    thought = anthropic_requests[-1]["body"]
+    assert thought["thinking"] == {"type": "enabled", "budget_tokens": 8192}, thought
+    assert thought["max_tokens"] > thought["thinking"]["budget_tokens"], thought
+    page.select_option(f"{row} select.thinking-effort", "off")
     page.unroute(ANTHROPIC_API, anthropic_route)
 
     # An empty API key is accepted: the ping goes out with no auth header.
@@ -364,14 +357,24 @@ def run_edges(d, page, errors):
     assert sent["headers"]["authorization"] == "Bearer k-openai", sent["headers"]
     assert sent["body"]["model"] == "fake-model" and sent["body"]["stream"] is False, sent["body"]
     assert "x-api-key" not in sent["headers"]
+    assert "reasoning_effort" not in sent["body"], sent["body"]
 
-    page.fill("#context-tokens", "64000")
+    # Thinking effort high rides the wire as reasoning_effort; off sends nothing.
+    page.select_option(f"{row} select.thinking-effort", "high")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    assert openai_requests[-1]["body"]["reasoning_effort"] == "high", openai_requests[-1]["body"]
+
+    assert page.locator("#context-tokens").count() == 0, \
+        "the context-window field must be gone"
     page.click("#settings-save")
-    page.click("#settings-close")
-    page.click("#open-settings")
-    assert page.input_value("#context-tokens") == "64000", "context window not stored"
     stored = page.evaluate("key => JSON.parse(localStorage.getItem(key)).roles.text", SETTINGS_KEY)
-    assert stored["contextTokens"] == 64000 and stored["apiKey"] == "k-openai", stored
+    assert stored["thinkingEffort"] == "high" and stored["apiKey"] == "k-openai", stored
+
+    page.select_option(f"{row} select.thinking-effort", "off")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    assert "reasoning_effort" not in openai_requests[-1]["body"], openai_requests[-1]["body"]
     page.click("#settings-close")
 
     # a streamed turn through the OpenAI-compatible adapter. The menu opens

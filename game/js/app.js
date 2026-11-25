@@ -1,10 +1,9 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=31';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=31';
-import { initExport } from './export.js?v=31';
-import { initSubmission } from './submission.js?v=31';
-import { loadProblems } from './problems.js?v=31';
+import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=32';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=32';
+import { initExport } from './export.js?v=32';
+import { loadProblems } from './problems.js?v=32';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -164,7 +163,6 @@ export function initApp() {
   showScreen('menu');
   initEngine(showScreen, renderFeedback);
   initExport(getEngineSession);
-  initSubmission();
   for (const button of document.querySelectorAll('#screen-nav button[data-nav]')) {
     button.addEventListener('click', () => showScreen(button.dataset.nav));
   }

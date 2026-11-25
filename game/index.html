@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Totally Accurate System Design Interview Simulator</title>
   <link rel="stylesheet" href="js/vendor/katex.min.css?v=1">
-  <link rel="stylesheet" href="css/main.css?v=31">
+  <link rel="stylesheet" href="css/main.css?v=32">
 </head>
 <body data-screen="menu">
   <header>
@@ -98,20 +98,9 @@
           <div id="chat-log" aria-live="polite"></div>
           <div id="interview-busy" hidden role="status">The interviewer is responding...</div>
           <div id="input-row">
-            <input id="candidate-input" type="text"
-                   placeholder="Type your answer, or ask for hidden constraints...">
+            <textarea id="candidate-input" rows="3"
+                   placeholder="Type your answer. Use $$equations$$ and ```mermaid fenced diagrams in the same message."></textarea>
             <button type="button" id="send-btn">Send</button>
-          </div>
-          <div id="submission-panel">
-            <div id="submission-tabs">
-              <button type="button" id="tab-btn-latex" class="active">LaTeX</button>
-              <button type="button" id="tab-btn-mermaid">Mermaid</button>
-              <button type="button" id="tab-btn-prose">Prose</button>
-            </div>
-            <textarea id="artifact-source" rows="6"
-                      placeholder="Type LaTeX, Mermaid source, or prose."></textarea>
-            <div id="artifact-preview"></div>
-            <button type="button" id="artifact-submit">Submit artifact</button>
           </div>
         </div>
       </div>
@@ -149,13 +138,10 @@
     <form id="settings-form" method="dialog">
       <table id="provider-rows">
         <thead>
-          <tr><th>Role</th><th>Provider</th><th>Base URL</th><th>Model</th><th>API key</th><th></th></tr>
+          <tr><th>Role</th><th>Provider</th><th>Base URL</th><th>Model</th><th>API key</th><th>Thinking effort</th><th></th></tr>
         </thead>
         <tbody><!-- provider rows rendered by js/settings.js --></tbody>
       </table>
-      <label>Context window of the text model (tokens)
-        <input id="context-tokens" type="number" min="0" step="1000" placeholder="32000">
-      </label>
       <div id="settings-message" role="status"></div>
       <menu>
         <button type="button" id="settings-save">Save</button>
@@ -184,11 +170,12 @@
         <p>The game stores your keys in the local storage of this browser. Local
            storage is the data store of one site in one browser. The game sends a
            key only to the provider of its row.</p>
-        <p>The context window field holds the token limit of your text model. A
-           token is a small piece of text that a model reads or writes. In a long
-           interview the game summarizes your older turns when they no longer
-           fit. It uses this number to decide when. Leave the field empty to
-           assume 32000 tokens.</p>
+        <p>The thinking effort of a row tells its model how hard to reason
+           before it answers: off, low, medium, or high. Off sends nothing
+           special. Low, medium, and high map to a reasoning-effort field on
+           OpenAI-style endpoints and to a thinking budget on Anthropic-style
+           endpoints. It applies to the text and vision rows. A higher effort
+           thinks longer and costs more.</p>
       </section>
 
       <section>
@@ -223,9 +210,10 @@
         <h3>3. During the interview</h3>
         <p>Start with clarifying questions about scale and requirements. Type
            below the chat and press Enter.</p>
-        <p>Submit your work with the panel under the chat. LaTeX is for
-           estimates, with a live math preview. Mermaid is for diagrams, with a
-           live drawing. Prose is for text. The game attaches each submission to
+        <p>Type your whole turn in one box: plain prose, equations wrapped in
+           $$dollars$$, and diagrams in ```mermaid fenced blocks, in any mix and
+           order. Equations render as math and diagrams render as drawings in
+           the chat. The game attaches each block to
            your current step, and the grader reads it.</p>
         <p>Round your numbers aggressively and show the reasoning. An answer
            within one order of magnitude passes. An order of magnitude is a
@@ -260,6 +248,6 @@
 
   <script src="js/vendor/katex.min.js?v=1"></script>
   <script src="js/vendor/mermaid.min.js?v=1"></script>
-  <script type="module" src="js/app.js?v=31"></script>
+  <script type="module" src="js/app.js?v=32"></script>
 </body>
 </html>

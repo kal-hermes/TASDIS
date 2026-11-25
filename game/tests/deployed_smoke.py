@@ -81,10 +81,7 @@ def main():
         assert d.stored_session()["ledger"]["revealedGuidance"] == [2], \
             "a hint that reveals guidance did not reach the ledger"
         assert "[[" not in page.locator("#chat-log").inner_text()
-        page.click("#tab-btn-latex")
-        page.fill("#artifact-source", "QPS = 1160")
-        page.wait_for_selector("#artifact-preview .katex")
-        page.click("#artifact-submit")
+        d.send("Estimate first.\n$$QPS = 1160$$")
         page.wait_for_selector("#chat-log .chat-message.artifact .katex")
         d.wait_reply()
         d.submit_mermaid()
