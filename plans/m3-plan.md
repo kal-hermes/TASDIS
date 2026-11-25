@@ -171,3 +171,22 @@ for both adapters, with the auth headers captured.
 Test: the prompt flags of `game/tests/m1_units.py` and the end-control
 section of `game/tests/m3_ui.py`, both written first and red on the
 missing rules.
+
+8. The ledger does not depend on the model emitting control lines. A
+   live interview showed a real model stating items in bold prose while
+   the ledger stayed at three of six. A tracker-truth prompt rule was
+   written after that session, but a rule cannot force a model's
+   bookkeeping. After every interviewer reply the game now sends a
+   second, small checker call. It reads the reply against the numbered
+   hidden guidance list and returns the items the reply stated. Game
+   code inspects the shape, drops numbers outside the list, and
+   records the rest through the same revealGuidance path as the control
+   lines. A failed checker names itself on the engine status and loses
+   nothing. The checker runs inside the turn, so the timer stays paused
+   and the ledger is consistent before the next candidate turn.
+
+Test: the checker units and the intercepted-endpoint sections of
+`game/tests/m3_guidance.py`, written first and red. Red cases: a prose
+reveal with no control line reaches the ledger through the scripted
+checker reply. A failed checker names itself and loses nothing. The
+mock path records from the checker queue.

@@ -284,6 +284,16 @@ The system prompt assembles from blocks in this order:
    reads the lines. It records each revealed item in the ledger (section
    5). It shows no line to the candidate. A number outside the list of
    the problem is dropped.
+   The ledger does not depend on those lines arriving. After every
+   interviewer reply the game sends a second, small checker call. That
+   call reads the reply against the numbered hidden guidance list and
+   reports the items the reply states. Game code inspects the checker
+   reply's shape, drops numbers outside the list, and records the rest through
+   the same ledger path as the control lines. A failed checker names
+   itself on the engine status and records nothing. The checker runs
+   inside the turn, so the clock stays paused and the ledger is
+   consistent before the next candidate turn. The briefing and the
+   wrap-up are not checked.
 4. Estimation reference block: the latency, throughput, and availability
    table from the `system-design` skill (reference file
    `references/estimation-numbers.md`). The interviewer grades claims against
