@@ -242,22 +242,30 @@ The typed-turn flows of `game/tests/m1_e2e.py`,
 `game/tests/m3_selfplay.py`, and `game/tests/deployed_smoke.py` cover
 the rest. All were written first and red.
 
-11. The settings table carries a Thinking effort select per role (off by
-    default, or low, medium, high). The old "Context window of the text
-    model" number field is gone. Game code maps the effort to request
-    parameters (`thinkingParams` in `js/providers.js`). OpenAI-style
-    calls carry a `reasoning_effort` field. Anthropic-style calls carry a
-    thinking budget (2048, 8192, 16384) plus a raised `max_tokens`. The
-    mock carries nothing. The field applies to the text and vision
-    roles. Wire capture proves the parameter rides the request at high
-    and disappears at off.
+11. The settings table carries a Thinking effort select per role. The
+    old "Context window of the text model" number field is gone. The
+    vocabulary is provider-neutral: `off`, `default`, `minimal`, `low`,
+    `medium`, `high`, `xhigh`, `max`, `ultra`. `default` is the select's
+    initial value. It omits the reasoning field, so the provider picks.
+    Provider defaults differ per model. `off` asks for no reasoning.
+    OpenAI-style calls receive the value `none`. Anthropic-style calls
+    leave thinking out, because thinking there is opt-in. The ladder
+    values ride OpenAI-style calls verbatim as `reasoning_effort`, so a
+    model that lacks a value rejects the request. Anthropic-style calls
+    carry a thinking budget instead: 1024, 2048, 8192, 16384, 32768,
+    65536, and 131072 tokens from `minimal` to `ultra`, with `max_tokens`
+    just above the budget. Game code owns the mapping
+    (`thinkingParams` in `js/providers.js`). The mock carries nothing.
+    The field applies to the text and vision roles. Wire capture proves
+    the parameter rides the request and drops out at `default`.
 
-Test: the mapping units of `game/tests/m1_units.py` cover all providers,
-all efforts, and the unknown effort that sends nothing. The settings
-section of `game/tests/m3_ui.py` covers the per-row select, the off
-default, and persistence. The wire captures of `game/tests/m3_selfplay.py`
-prove the high case rides the wire, off sends nothing, and the Anthropic
-budget is present. All were written first and red.
+Test: the mapping units of `game/tests/m1_units.py` cover all providers
+and all nine values plus the blank string. The settings section of
+`game/tests/m3_ui.py` covers the nine options, the `default` initial
+value, and persistence. The wire captures of `game/tests/m3_selfplay.py`
+prove the rest. `xhigh` rides the wire verbatim. `off` becomes `none`
+on OpenAI-style calls. `default` omits the field. The Anthropic budgets
+land. All were written first and red.
 
 Test: the brief units of `game/tests/m1_units.py` (validation, block
 assembly, mode and cap gates, probe lines). Also the probe-cap section

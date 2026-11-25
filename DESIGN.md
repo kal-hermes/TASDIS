@@ -159,14 +159,22 @@ system.
 
 - Providers, one row per role (`text`, `vision`, `image`): provider id
   (`openai`, `anthropic`, or `openai-compatible`), base URL, model name,
-  API key, and thinking effort. The effort is `off` by default, or `low`,
-  `medium`, or `high`. The key is optional: an endpoint that needs no key
-  (a gateway, a local model server) gets its call without an auth header.
-  A set key stays in localStorage and rides only in the auth header to the
-  provider. The thinking effort maps to request parameters in game code.
-  OpenAI-style calls carry a `reasoning_effort` field. Anthropic-style
-  calls carry a thinking budget. The mock provider carries nothing. The
-  field applies to the text and vision roles. The image role ignores it.
+  API key, and thinking effort. The effort is `default` by default, or
+  `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`.
+  The key is optional: an endpoint that needs no key (a gateway, a local
+  model server) gets its call without an auth header. A set key stays in
+  localStorage and rides only in the auth header to the provider. The
+  thinking effort maps to request parameters in game code. `default`
+  omits the reasoning field, so the provider picks. Those defaults are
+  model-dependent. `off` asks for no reasoning: OpenAI-style calls carry
+  `reasoning_effort: "none"`, Anthropic-style calls leave thinking out
+  (thinking there is opt-in). The ladder values pass through verbatim as
+  `reasoning_effort` on OpenAI-style calls, so a model that lacks a value
+  rejects the request. Anthropic-style calls carry a thinking budget
+  instead: 1024, 2048, 8192, 16384, 32768, 65536, and 131072 tokens from
+  `minimal` to `ultra`, with `max_tokens` just above the budget. The mock
+  provider carries nothing. The field applies to the text and vision
+  roles. The image role ignores it.
 - Interview preferences: learning or testing mode, constrained or
   unconstrained mode, persona (phase 2), language (phase 2). The menu also
   offers a proactive-guidance preference (learning mode only, off by
