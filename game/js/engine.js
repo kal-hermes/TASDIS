@@ -8,15 +8,15 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=32';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=32';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=32';
-import { assembleContext, compressIfNeeded } from './context.js?v=32';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=32';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=32';
-import { parseTurn } from './turn-parse.js?v=32';
-import { renderLatex } from './render-latex.js?v=32';
-import { renderMermaid } from './render-mermaid.js?v=32';
+} from './state.js?v=33';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=33';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=33';
+import { assembleContext, compressIfNeeded } from './context.js?v=33';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=33';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=33';
+import { parseTurn } from './turn-parse.js?v=33';
+import { renderLatex } from './render-latex.js?v=33';
+import { renderMermaid } from './render-mermaid.js?v=33';
 
 let session = null;
 let busy = false;

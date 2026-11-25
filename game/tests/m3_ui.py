@@ -80,8 +80,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=32');
-              const exp = await import(base + 'js/export.js?v=32');
+              const state = await import(base + 'js/state.js?v=33');
+              const exp = await import(base + 'js/export.js?v=33');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',
@@ -160,7 +160,7 @@ def main():
             # button for the rest of the session. Steps unmarked: the
             # candidate can still end.
             page.evaluate("""async ([base, key]) => {
-              const state = await import(base + 'js/state.js?v=32');
+              const state = await import(base + 'js/state.js?v=33');
               const problem = await (await fetch(base + 'js/problems/url-shortener.json')).json();
               const session = state.newSession(problem, { helpMode: 'learning' });
               state.addMessage(session, 'interviewer', 'Here is the problem. Over to you.');
@@ -236,16 +236,21 @@ def main():
                 "els => els.map(e => [e.dataset.role,"
                 " e.querySelector('select.thinking-effort')?.value])")
             assert [r[0] for r in rows] == ['text', 'vision', 'image'], rows
-            assert all(r[1] == 'off' for r in rows), rows
+            assert all(r[1] == 'default' for r in rows), rows
+            options = page.eval_on_selector_all(
+                '#provider-rows tbody tr[data-role="text"] select.thinking-effort option',
+                "els => els.map(e => e.value)")
+            assert options == ['off', 'default', 'minimal', 'low', 'medium',
+                               'high', 'xhigh', 'max', 'ultra'], options
             page.select_option(
                 '#provider-rows tbody tr[data-role="text"] select.thinking-effort',
-                'medium')
+                'xhigh')
             page.click('#settings-save')
             page.wait_for_timeout(300)
             stored = page.evaluate(
                 f"key => JSON.parse(localStorage.getItem(key)).roles", SETTINGS_KEY)
-            assert stored['text']['thinkingEffort'] == 'medium', stored['text']
-            assert stored['vision']['thinkingEffort'] == 'off', stored['vision']
+            assert stored['text']['thinkingEffort'] == 'xhigh', stored['text']
+            assert stored['vision']['thinkingEffort'] == 'default', stored['vision']
             page.click('#settings-close')
             print('  ok   thinking effort: per-row select, off default, persists')
 

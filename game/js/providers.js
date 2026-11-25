@@ -8,7 +8,7 @@
 // HttpError). The public interface turns every failure into one readable
 // message with a next step, so no caller parses a raw failure.
 
-import { loadSettings } from './settings.js?v=32';
+import { loadSettings } from './settings.js?v=33';
 
 const PROVIDER_NAMES = {
   mock: 'mock',
@@ -198,15 +198,18 @@ async function streamSse(url, init, onDelta) {
 // API key sends no Authorization header: a gateway or a local endpoint can
 // need none.
 // The thinking-effort setting maps to request parameters in game code
-// (DESIGN.md 5.2): a reasoning_effort field on OpenAI-style calls, a
-// thinking budget on Anthropic-style calls, nothing on the mock. 'off'
-// (the default) and '' send nothing. The Anthropic contract needs
-// max_tokens above the budget, so max_tokens rides along.
-const ANTHROPIC_BUDGETS = { low: 2048, medium: 8192, high: 16384 };
+// (DESIGN.md 5.2). The vocabulary is provider-neutral and passes through:
+// 'default' omits the field (the provider picks; defaults are
+// model-dependent), 'off' means reasoning disabled ('none' on OpenAI-style
+// calls, field omitted on Anthropic-style calls where classic thinking is
+// opt-in), and the ladder values ride OpenAI-style calls verbatim and map
+// to thinking budgets on Anthropic-style calls. The mock carries nothing.
+const ANTHROPIC_BUDGETS = { minimal: 1024, low: 2048, medium: 8192,
+  high: 16384, xhigh: 32768, max: 65536, ultra: 131072 };
 
 export function thinkingParams(config) {
   const effort = config && config.thinkingEffort;
-  if (!effort || !['low', 'medium', 'high'].includes(effort)) return {};
+  if (!effort || effort === 'default') return {};
   if (config.provider === 'anthropic') {
     const budget = ANTHROPIC_BUDGETS[effort];
     if (!budget) return {};
@@ -214,7 +217,7 @@ export function thinkingParams(config) {
       max_tokens: budget + 1024 };
   }
   if (config.provider === 'openai' || config.provider === 'openai-compatible') {
-    return { reasoning_effort: effort };
+    return { reasoning_effort: effort === 'off' ? 'none' : effort };
   }
   return {};
 }
@@ -347,7 +350,7 @@ let mockScriptCache = null;
 async function loadMockScript(config) {
   if (mockScriptCache) return mockScriptCache;
   const base = config.baseUrl || new URL('.', import.meta.url).href;
-  const scriptUrl = new URL('prompts/mock-script.json?v=32', base).href;
+  const scriptUrl = new URL('prompts/mock-script.json?v=33', base).href;
   mockScriptCache = await fetchJson(scriptUrl, {});
   return mockScriptCache;
 }

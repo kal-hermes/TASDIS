@@ -2,14 +2,20 @@
 // Schema per DESIGN.md section 5.2. Keys stay in localStorage and ride
 // only in the Authorization header to the provider (D9).
 
-import { complete } from './providers.js?v=32';
+import { complete } from './providers.js?v=33';
 
 export const SETTINGS_KEY = 'tadsdi.settings.v1';
 export const PROVIDER_ROLES = ['text', 'vision', 'image'];
 export const PROVIDER_IDS = ['mock', 'openai', 'anthropic', 'openai-compatible'];
 
 const DEFAULT_ROLE = { provider: 'mock', baseUrl: '', model: '', apiKey: '',
-  thinkingEffort: 'off' };
+  thinkingEffort: 'default' };
+
+// The effort vocabulary is provider-neutral and passes through verbatim on
+// OpenAI-style calls (DESIGN.md 5.2). Providers and gateways add their own
+// tokens over time, so the list is not a validity whitelist.
+const THINKING_EFFORTS = ['off', 'default', 'minimal', 'low', 'medium',
+  'high', 'xhigh', 'max', 'ultra'];
 
 function defaultSettings() {
   return {
@@ -63,7 +69,7 @@ function rowTemplate(role) {
   const options = PROVIDER_IDS
     .map((id) => `<option value="${id}">${id}</option>`)
     .join('');
-  const efforts = ['off', 'low', 'medium', 'high']
+  const efforts = THINKING_EFFORTS
     .map((e) => `<option value="${e}">${e}</option>`)
     .join('');
   return `
@@ -87,7 +93,7 @@ function fillRow(tbody, role, config) {
   row.querySelector('input.base-url').value = config.baseUrl || '';
   row.querySelector('input.model').value = config.model || '';
   row.querySelector('input.api-key').value = config.apiKey || '';
-  row.querySelector('select.thinking-effort').value = config.thinkingEffort || 'off';
+  row.querySelector('select.thinking-effort').value = config.thinkingEffort || 'default';
 }
 
 function collectRow(row) {
@@ -96,7 +102,7 @@ function collectRow(row) {
     baseUrl: row.querySelector('input.base-url').value.trim(),
     model: row.querySelector('input.model').value.trim(),
     apiKey: row.querySelector('input.api-key').value,
-    thinkingEffort: row.querySelector('select.thinking-effort').value || 'off',
+    thinkingEffort: row.querySelector('select.thinking-effort').value || 'default',
   };
 }
 

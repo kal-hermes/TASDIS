@@ -40,7 +40,7 @@ OPENAI_API = "**/fake/v1/chat/completions"
 def queue_faults(page, faults):
     page.evaluate(
         """async ([base, faults]) => {
-          const providers = await import(base + 'js/providers.js?v=32');
+          const providers = await import(base + 'js/providers.js?v=33');
           providers.setMockFaultQueue(faults);
         }""", [MODULES, faults])
 
@@ -312,7 +312,16 @@ def run_edges(d, page, errors):
     thought = anthropic_requests[-1]["body"]
     assert thought["thinking"] == {"type": "enabled", "budget_tokens": 8192}, thought
     assert thought["max_tokens"] > thought["thinking"]["budget_tokens"], thought
+    page.select_option(f"{row} select.thinking-effort", "xhigh")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    thought = anthropic_requests[-1]["body"]
+    assert thought["thinking"] == {"type": "enabled", "budget_tokens": 32768}, thought
     page.select_option(f"{row} select.thinking-effort", "off")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    assert "thinking" not in anthropic_requests[-1]["body"], anthropic_requests[-1]["body"]
+    page.select_option(f"{row} select.thinking-effort", "default")
     page.unroute(ANTHROPIC_API, anthropic_route)
 
     # An empty API key is accepted: the ping goes out with no auth header.
@@ -359,19 +368,23 @@ def run_edges(d, page, errors):
     assert "x-api-key" not in sent["headers"]
     assert "reasoning_effort" not in sent["body"], sent["body"]
 
-    # Thinking effort high rides the wire as reasoning_effort; off sends nothing.
-    page.select_option(f"{row} select.thinking-effort", "high")
+    # Thinking effort rides the wire verbatim; default omits the field;
+    # off means reasoning disabled and sends none.
+    page.select_option(f"{row} select.thinking-effort", "xhigh")
     page.click(f"{row} button.test-connection")
     page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
-    assert openai_requests[-1]["body"]["reasoning_effort"] == "high", openai_requests[-1]["body"]
+    assert openai_requests[-1]["body"]["reasoning_effort"] == "xhigh", openai_requests[-1]["body"]
+    page.select_option(f"{row} select.thinking-effort", "off")
+    page.click(f"{row} button.test-connection")
+    page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
+    assert openai_requests[-1]["body"]["reasoning_effort"] == "none", openai_requests[-1]["body"]
 
     assert page.locator("#context-tokens").count() == 0, \
         "the context-window field must be gone"
+    page.select_option(f"{row} select.thinking-effort", "default")
     page.click("#settings-save")
     stored = page.evaluate("key => JSON.parse(localStorage.getItem(key)).roles.text", SETTINGS_KEY)
-    assert stored["thinkingEffort"] == "high" and stored["apiKey"] == "k-openai", stored
-
-    page.select_option(f"{row} select.thinking-effort", "off")
+    assert stored["thinkingEffort"] == "default" and stored["apiKey"] == "k-openai", stored
     page.click(f"{row} button.test-connection")
     page.wait_for_selector(f"{row} .test-result.ok", timeout=20000)
     assert "reasoning_effort" not in openai_requests[-1]["body"], openai_requests[-1]["body"]

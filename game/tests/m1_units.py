@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=32');
-              const context = await import('./js/context.js?v=32');
-              const assemble = await import('./js/prompts/assemble.js?v=32');
+              const state = await import('./js/state.js?v=33');
+              const context = await import('./js/context.js?v=33');
+              const assemble = await import('./js/prompts/assemble.js?v=33');
               const out = {};
 
               const problem = {
@@ -112,9 +112,9 @@ def main():
               out.learningProactive = learnPro[0].content.includes('ONE gentle pointer');
 
               // ---- interviewer brief: validation, block, gates, probe lines
-              const briefMod = await import('./js/prompts/brief.js?v=32');
-              const engineMod = await import('./js/engine.js?v=32');
-              const pack = await (await fetch('./js/problems/url-shortener.json?v=32')).json();
+              const briefMod = await import('./js/prompts/brief.js?v=33');
+              const engineMod = await import('./js/engine.js?v=33');
+              const pack = await (await fetch('./js/problems/url-shortener.json?v=33')).json();
               out.briefValidates = (() => {
                 try { briefMod.validateBrief(pack); return true; } catch (e) { return 'threw: ' + e.message; }
               })();
@@ -181,7 +181,7 @@ def main():
               const packs = {};
               const packErrs = {};
               for (const slug of bankSlugs) {
-                const resp = await fetch(`./js/problems/${slug}.json?v=32`);
+                const resp = await fetch(`./js/problems/${slug}.json?v=33`);
                 const pb = await resp.json();
                 const brief = pb.interviewer_brief;
                 let valid = false;
@@ -204,7 +204,7 @@ def main():
 
               // one turn = prose, $$latex$$, and ```mermaid fences in any
               // combination; parseTurn splits it into ordered segments
-              const tp = await import('./js/turn-parse.js?v=32');
+              const tp = await import('./js/turn-parse.js?v=33');
               const p1 = tp.parseTurn('Just a plain answer.');
               const p2 = tp.parseTurn('The answer:\\n$$Q = 100 \\cdot 86400$$\\nThat is the rate.');
               const p3 = tp.parseTurn('Sketch:\\n```mermaid\\ngraph LR\\nA-->B\\n```\\nIt flows.');
@@ -233,23 +233,39 @@ def main():
               // game code (DESIGN.md 5.2): reasoning_effort for OpenAI-style
               // calls, a thinking budget for Anthropic-style calls, nothing
               // for the mock
-              const prov = await import('./js/providers.js?v=32');
+              const prov = await import('./js/providers.js?v=33');
               const tp2 = (cfg) => prov.thinkingParams(cfg);
+              // off = reasoning disabled (none), default = omit the field
+              // (provider picks; defaults are model-dependent). Ladder
+              // values pass through verbatim on OpenAI-style calls and map
+              // to budgets on Anthropic-style calls.
               out.thinking = {
-                mockOff: JSON.stringify(tp2({ provider: 'mock', thinkingEffort: 'low' })) === '{}',
-                openaiLow: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'low' }))
-                  === JSON.stringify({ reasoning_effort: 'low' }),
-                openaiCompatHigh: JSON.stringify(tp2({ provider: 'openai-compatible', thinkingEffort: 'high' }))
-                  === JSON.stringify({ reasoning_effort: 'high' }),
-                openaiOff: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: '' })) === '{}',
-                anthropicLow: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'low' }))
-                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 2048 }, max_tokens: 3072 }),
-                anthropicMedium: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'medium' }))
-                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 8192 }, max_tokens: 9216 }),
-                anthropicHigh: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'high' }))
-                  === JSON.stringify({ thinking: { type: 'enabled', budget_tokens: 16384 }, max_tokens: 17408 }),
-                anthropicOff: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: '' })) === '{}',
-                unknownEffort: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'turbo' })) === '{}',
+                mockAll: ['off', 'default', 'minimal', 'low', 'medium', 'high',
+                  'xhigh', 'max', 'ultra', '']
+                    .every((e) => JSON.stringify(
+                      tp2({ provider: 'mock', thinkingEffort: e })) === '{}'),
+                openaiNone: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'off' }))
+                  === JSON.stringify({ reasoning_effort: 'none' }),
+                openaiDefault: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: 'default' })) === '{}',
+                openaiBlank: JSON.stringify(tp2({ provider: 'openai', thinkingEffort: '' })) === '{}',
+                openaiLadder: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']
+                  .every((e) => JSON.stringify(tp2({ provider: 'openai', thinkingEffort: e }))
+                    === JSON.stringify({ reasoning_effort: e })),
+                openaiCompatPass: JSON.stringify(tp2({ provider: 'openai-compatible', thinkingEffort: 'xhigh' }))
+                  === JSON.stringify({ reasoning_effort: 'xhigh' }),
+                anthropicOff: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'off' })) === '{}',
+                anthropicDefault: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: 'default' })) === '{}',
+                anthropicBlank: JSON.stringify(tp2({ provider: 'anthropic', thinkingEffort: '' })) === '{}',
+                anthropicLadder: ['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']
+                  .every((e) => {
+                    const got = tp2({ provider: 'anthropic', thinkingEffort: e });
+                    const want = { minimal: 1024, low: 2048, medium: 8192, high: 16384,
+                      xhigh: 32768, max: 65536, ultra: 131072 }[e];
+                    return got.thinking
+                      && got.thinking.type === 'enabled'
+                      && got.thinking.budget_tokens === want
+                      && got.max_tokens === want + 1024;
+                  }),
               };
 
               const briefing = assemble.assembleBriefingMessages({problem});
@@ -319,11 +335,11 @@ def main():
                           "web-crawler": True, "unique-id-generator": True,
                           "notification-system": True},
                 "packErrs": {},
-                "thinking": {"mockOff": True, "openaiLow": True,
-                             "openaiCompatHigh": True, "openaiOff": True,
-                             "anthropicLow": True, "anthropicMedium": True,
-                             "anthropicHigh": True, "anthropicOff": True,
-                             "unknownEffort": True},
+                "thinking": {"mockAll": True, "openaiNone": True,
+                             "openaiDefault": True, "openaiBlank": True,
+                             "openaiLadder": True, "openaiCompatPass": True,
+                             "anthropicOff": True, "anthropicDefault": True,
+                             "anthropicBlank": True, "anthropicLadder": True},
                 "turnParse": {"proseOnly": True, "prosePlusLatex": True,
                               "latexSource": True, "prosePlusMermaid": True,
                               "mermaidSource": True, "latexOnly": True,
