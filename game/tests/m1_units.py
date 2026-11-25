@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=28');
-              const context = await import('./js/context.js?v=28');
-              const assemble = await import('./js/prompts/assemble.js?v=28');
+              const state = await import('./js/state.js?v=29');
+              const context = await import('./js/context.js?v=29');
+              const assemble = await import('./js/prompts/assemble.js?v=29');
               const out = {};
 
               const problem = {

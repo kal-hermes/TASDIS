@@ -40,7 +40,7 @@ OPENAI_API = "**/fake/v1/chat/completions"
 def queue_faults(page, faults):
     page.evaluate(
         """async ([base, faults]) => {
-          const providers = await import(base + 'js/providers.js?v=28');
+          const providers = await import(base + 'js/providers.js?v=29');
           providers.setMockFaultQueue(faults);
         }""", [MODULES, faults])
 
@@ -384,7 +384,7 @@ def run_edges(d, page, errors):
     page.click("#send-btn")
     d.wait_reply()
     assert "OpenAI reply." in page.locator("#chat-log .chat-message.interviewer").last.inner_text()
-    streamed = openai_requests[-1]["body"]
+    streamed = [r for r in openai_requests if r["body"].get("stream")][-1]["body"]
     assert streamed["stream"] is True and streamed["messages"][0]["role"] == "system", streamed
     assert 2 in d.stored_session()["coveredSteps"], d.stored_session()["coveredSteps"]
     page.unroute(OPENAI_API, openai_route)

@@ -7,13 +7,14 @@
 import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
-} from './state.js?v=28';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=28';
-import { assembleContext, compressIfNeeded } from './context.js?v=28';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=28';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=28';
-import { renderLatex } from './render-latex.js?v=28';
-import { renderMermaid } from './render-mermaid.js?v=28';
+} from './state.js?v=29';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=29';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=29';
+import { assembleContext, compressIfNeeded } from './context.js?v=29';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=29';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=29';
+import { renderLatex } from './render-latex.js?v=29';
+import { renderMermaid } from './render-mermaid.js?v=29';
 
 let session = null;
 let busy = false;
@@ -237,6 +238,30 @@ async function interviewerContext() {
 // Runs one interviewer call (briefing, interview turn, or help). Returns
 // false when the provider failed; the caller's message is already stored, so
 // a retry only repeats this call.
+
+// The reveal checker: the ledger cannot depend on the model's control
+// lines, so every interviewer reply is audited against the hidden list.
+// A failed checker degrades to the engine status; the reply is safe.
+async function runRevealCheck(session, replyText) {
+  const status = el('engine-status');
+  try {
+    const audit = await complete('text',
+      buildCheckMessages(replyText, session.problem, session.ledger.revealedGuidance),
+      { purpose: 'check_reveals' });
+    revealGuidance(session,
+      parseCheckReply(audit, (session.problem.hidden_guidance || []).length));
+    // The engine status carries other subsystem notes (compression, for
+    // one). Only the checker's own failure message is cleared here.
+    if (status.textContent.startsWith('The reveal check failed')) {
+      status.textContent = '';
+    }
+  } catch (checkErr) {
+    status.textContent =
+      `The reveal check failed on the last reply (${checkErr.message}). ` +
+      'The ledger may be missing an item the reply stated.';
+  }
+}
+
 async function runLlmTurn({ purpose, helpRequest }) {
   busy = true;
   renderControls();
@@ -269,6 +294,7 @@ async function runLlmTurn({ purpose, helpRequest }) {
     for (const c of covered) coverStep(session, c);
     revealGuidance(session, guidance);
     if (purpose !== 'help') helpStage = 0;
+    await runRevealCheck(session, clean);
   } catch (err) {
     ok = false;
     streamEl.remove();

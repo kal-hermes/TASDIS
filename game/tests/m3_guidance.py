@@ -24,10 +24,10 @@ BASE = f"http://127.0.0.1:{PORT}"
 MODULES = BASE + "/"  # base URL for dynamic imports in page.evaluate
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=28');
-  const engine = await import(base + 'js/engine.js?v=28');
-  const assemble = await import(base + 'js/prompts/assemble.js?v=28');
-  const context = await import(base + 'js/context.js?v=28');
+  const state = await import(base + 'js/state.js?v=29');
+  const engine = await import(base + 'js/engine.js?v=29');
+  const assemble = await import(base + 'js/prompts/assemble.js?v=29');
+  const context = await import(base + 'js/context.js?v=29');
   const out = {};
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
     hidden_guidance: ['g1', 'g2', 'g3'] };
@@ -67,7 +67,7 @@ UNITS = """async (base) => {
 
   // The grader receives the texts of the revealed items, in the order of
   // the ledger. The ledger itself passes as it is stored.
-  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=28');
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=29');
   const graded = state.newSession({ ...problem, known_patterns: ['kp'], common_misses: ['cm'] });
   const input = (variant) => JSON.parse(
     prompts.buildGraderMessages(graded, variant)[1].content.split('Input:\\n\\n')[1]);
@@ -85,6 +85,28 @@ UNITS = """async (base) => {
   const odd = { ...graded, problem: { ...problem, hidden_guidance: 'abc' } };
   out.graderNoList = prompts.buildGraderMessages(odd, 'final')[1].content
     .includes('"hidden_guidance_revealed":[]');
+
+  // The reveal checker: its prompt names the reply, the numbered items,
+  // and what is already surfaced. Its reply validation is strict.
+  const check = await import(base + 'js/prompts/check-prompt.js?v=29');
+  const checkMsgs = check.buildCheckMessages(
+    'Reads outnumber writes about 100 to 1.', problem, [1]);
+  const checkUser = checkMsgs[1].content;
+  out.checkMsgs = [
+    checkMsgs.length === 2,
+    checkMsgs[0].role === 'system',
+    checkUser.includes('Reads outnumber writes about 100 to 1.'),
+    checkUser.includes('1. g1') && checkUser.includes('3. g3'),
+    checkUser.includes('Already surfaced earlier: 1.'),
+  ].join(',');
+  out.checkValid = check.parseCheckReply('{"revealed": [2, 1]}', 3).join(',');
+  out.checkDedupe = check.parseCheckReply('{"revealed": [2, 2, 1]}', 3).join(',');
+  out.checkDrops = check.parseCheckReply('{"revealed": [2, 0, 9, "3", 2.5]}', 3).join(',');
+  const rejects = (text) => {
+    try { check.parseCheckReply(text, 3); return false; } catch { return true; }
+  };
+  out.checkRejects = [rejects('no json here'), rejects('{"revealed": "no"}'),
+    rejects('{"other": []}')].join(',');
   return out;
 }"""
 
@@ -102,6 +124,11 @@ EXPECTED = {
     "graderRule": True,
     "graderCorrupt": "g2|g1",
     "graderNoList": True,
+    "checkMsgs": "true,true,true,true,true",
+    "checkValid": "2,1",
+    "checkDedupe": "2,1",
+    "checkDrops": "2",
+    "checkRejects": "true,true,true",
 }
 
 
@@ -122,7 +149,8 @@ def main():
             browser = p.chromium.launch(args=["--no-sandbox"])
             page = browser.new_page()
             page.set_default_timeout(20000)
-            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            page.on("console", lambda m: errors.append(
+                {"text": m.text, "url": m.location.get("url", "")}) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(str(e)))
 
             # ---- units ------------------------------------------------
@@ -135,11 +163,23 @@ def main():
 
             # ---- browser: scripted replies over an intercepted endpoint
             replies = []  # the next replies of the endpoint, in order
+            checks = []   # the next checker replies, in order
+            fail_check = {"on": False}
 
             def endpoint(route):
                 # A provider takes a moment. An answer at once can end before
                 # Driver.wait_reply sees the busy state of the game.
                 time.sleep(0.2)
+                body = route.request.post_data_json or {}
+                if not body.get("stream"):
+                    # The reveal checker: a plain JSON completion.
+                    if fail_check["on"]:
+                        route.fulfill(status=500, body="checker down")
+                        return
+                    payload = checks.pop(0) if checks else '{"revealed": []}'
+                    route.fulfill(status=200, content_type="application/json", body=json.dumps(
+                        {"choices": [{"message": {"content": payload}}]}))
+                    return
                 route.fulfill(status=200, content_type="text/event-stream",
                               body=sse(replies.pop(0) if replies else "Fallback."))
 
@@ -204,7 +244,7 @@ def main():
 
             # 5. the interviewer is told what it already surfaced
             head = page.evaluate("""async ([base, key]) => {
-              const context = await import(base + 'js/context.js?v=28');
+              const context = await import(base + 'js/context.js?v=29');
               const session = JSON.parse(localStorage.getItem(key));
               return context.assembleContext(session, { contextTokens: 0 })
                 .filter((m) => m.role === 'system').map((m) => m.content).join('\\n');
@@ -220,7 +260,7 @@ def main():
 
             # 7. the grader input of that stored session names the three items
             graded = page.evaluate("""async ([base, key]) => {
-              const prompts = await import(base + 'js/prompts/grader-prompt.js?v=28');
+              const prompts = await import(base + 'js/prompts/grader-prompt.js?v=29');
               const session = JSON.parse(localStorage.getItem(key));
               const user = prompts.buildGraderMessages(session, 'final')[1].content;
               const input = JSON.parse(user.split('Input:\\n\\n')[1]);
@@ -234,6 +274,40 @@ def main():
             assert graded["numbers"] == [2, 1, 3], graded["numbers"]
             assert graded["texts"] == [items[1], items[0], items[2]], graded["texts"]
             print("  ok   browser: the grader input carries the texts of items 2, 1 and 3 of the real problem")
+
+            # ---- 8. a prose reveal reaches the ledger through the checker
+            # Section 6's reload re-seeded the mock settings; the intercepted
+            # adapter is selected again (settings are read on every call).
+            set_text_role(page, provider="openai-compatible", baseUrl=f"{BASE}/fake/v1",
+                          model="fake-model", apiKey="k")
+            checks.clear()
+            checks.append('{"revealed": [5, 99, "x", 5, 5]}')
+            turn("Reads outnumber writes by about a hundred to one.")
+            status = page.locator("#engine-status").inner_text()
+            notice = page.locator("#chat-log .notice.error").last.inner_text() \
+                if page.locator("#chat-log .notice.error").count() else "(none)"
+            last_reply = page.locator("#chat-log .chat-message.interviewer").last.inner_text()
+            assert revealed() == [2, 1, 3, 5], \
+                f"{revealed()} status={status!r} notice={notice!r} reply={last_reply!r}"
+            print("  ok   checker: a prose reveal is recorded; the checker's numbers are inspected")
+
+            # ---- 9. a failed checker is degradation, not a lost reply ----
+            checks.clear()
+            fail_check["on"] = True
+            turn("Vanity codes are reserved for exactly one paying owner.")
+            assert "Vanity codes are reserved" in reply()
+            assert revealed() == [2, 1, 3, 5], revealed()
+            status = page.locator("#engine-status").inner_text()
+            assert "reveal check failed" in status, status
+            fail_check["on"] = False
+            print("  ok   checker failure: the reply stays, the ledger waits, the failure is named")
+
+            # ---- 10. the next clean checker clears the failure flag -----
+            checks.append('{"revealed": [1]}')
+            turn("Still about the ratio.")
+            assert revealed() == [2, 1, 3, 5], revealed()
+            assert page.locator("#engine-status").inner_text() == ""
+            print("  ok   checker recovery: the next clean checker clears the status")
 
             # ---- browser: the mock provider ---------------------------
             mock = browser.new_page()
@@ -249,10 +323,25 @@ def main():
             assert dm.stored_session()["ledger"]["revealedGuidance"] == [2], \
                 "the first hint of the mock script does not reveal item 2"
             assert "[[" not in mock.locator("#chat-log").inner_text()
+
+            # The checker runs on the mock path too: a scripted checker reply
+            # records an item, and the status stays clean.
+            mock.evaluate("""async (base) => {
+              const providers = await import(base + 'js/providers.js?v=29');
+              providers.setMockCheckerQueue(['{"revealed": [3]}']);
+            }""", MODULES)
+            dm.send("Another hint, please")
+            assert dm.stored_session()["ledger"]["revealedGuidance"][:2] == [2, 3], \
+                dm.stored_session()["ledger"]["revealedGuidance"]
+            assert mock.locator("#engine-status").inner_text() == ""
+            print("  ok   mock: the checker queue records a stated item; the status stays clean")
             browser.close()
 
-        assert not errors, "console or page errors:\n  " + "\n  ".join(errors)
-        print("M3 GUIDANCE: PASS (the [[guidance: N]] line reaches the ledger; bad numbers are dropped)")
+        real = [e for e in errors
+                if not (isinstance(e, dict) and e["text"].startswith("Failed to load resource")
+                        and "/fake/" in e["url"])]
+        assert not real, "console or page errors:\n  " + "\n  ".join(str(e) for e in real)
+        print("M3 GUIDANCE: PASS (the [[guidance: N]] line and the checker reach the ledger; bad numbers are dropped)")
         return 0
     finally:
         server.terminate()

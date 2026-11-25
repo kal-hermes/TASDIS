@@ -8,7 +8,7 @@
 // HttpError). The public interface turns every failure into one readable
 // message with a next step, so no caller parses a raw failure.
 
-import { loadSettings } from './settings.js?v=28';
+import { loadSettings } from './settings.js?v=29';
 
 const PROVIDER_NAMES = {
   mock: 'mock',
@@ -323,7 +323,7 @@ let mockScriptCache = null;
 async function loadMockScript(config) {
   if (mockScriptCache) return mockScriptCache;
   const base = config.baseUrl || new URL('.', import.meta.url).href;
-  const scriptUrl = new URL('prompts/mock-script.json?v=28', base).href;
+  const scriptUrl = new URL('prompts/mock-script.json?v=29', base).href;
   mockScriptCache = await fetchJson(scriptUrl, {});
   return mockScriptCache;
 }
@@ -331,11 +331,17 @@ async function loadMockScript(config) {
 const mockCounters = new Map();
 const helpLadder = new Map();
 let graderQueue = [];
+let checkerQueue = [];
 let faultQueue = [];
 
 // Test hook: script the grader reply sequence (names of mock-script keys).
 export function setMockGraderQueue(entries) {
   graderQueue = [...entries];
+}
+
+// Test hook: script the reveal checker's replies (raw JSON strings).
+export function setMockCheckerQueue(entries) {
+  checkerQueue = [...entries];
 }
 
 // Test hook: make the next mock calls fail like a real provider would.
@@ -414,6 +420,13 @@ function mockGrade(script, options) {
   return JSON.stringify(script[key]);
 }
 
+// The reveal checker's reply comes from the checker queue as a raw JSON
+// string, so a test can script what the audit found. The default finds
+// nothing.
+function mockCheckerReply() {
+  return checkerQueue.length > 0 ? checkerQueue.shift() : '{"revealed": []}';
+}
+
 // One reply rule per call purpose. A string rule is a key of the script.
 // Every other purpose is an interview turn.
 const MOCK_RULES = {
@@ -424,6 +437,7 @@ const MOCK_RULES = {
   grade: mockGrade,
   grade_mid: mockGrade,
   help: mockHelp,
+  check_reveals: mockCheckerReply,
 };
 
 function pickMockReply(script, options) {
@@ -435,6 +449,7 @@ export function resetMockState() {
   mockCounters.clear();
   helpLadder.clear();
   graderQueue = [];
+  checkerQueue = [];
   mockScriptCache = null;
 }
 

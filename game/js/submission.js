@@ -3,9 +3,9 @@
 // Submit inserts the artifact into the chat tagged with the current step
 // and prompts an interviewer response.
 
-import { submitArtifact } from './engine.js?v=28';
-import { renderLatex } from './render-latex.js?v=28';
-import { renderMermaid } from './render-mermaid.js?v=28';
+import { submitArtifact } from './engine.js?v=29';
+import { renderLatex } from './render-latex.js?v=29';
+import { renderMermaid } from './render-mermaid.js?v=29';
 
 const TABS = ['latex', 'mermaid', 'prose'];
 
