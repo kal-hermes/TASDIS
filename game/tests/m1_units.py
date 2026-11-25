@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=29');
-              const context = await import('./js/context.js?v=29');
-              const assemble = await import('./js/prompts/assemble.js?v=29');
+              const state = await import('./js/state.js?v=30');
+              const context = await import('./js/context.js?v=30');
+              const assemble = await import('./js/prompts/assemble.js?v=30');
               const out = {};
 
               const problem = {
@@ -111,6 +111,67 @@ def main():
                 {problem, helpMode: 'learning', constraintMode: 'unconstrained', proactiveHints: true});
               out.learningProactive = learnPro[0].content.includes('ONE gentle pointer');
 
+              // ---- interviewer brief: validation, block, gates, probe lines
+              const briefMod = await import('./js/prompts/brief.js?v=30');
+              const engineMod = await import('./js/engine.js?v=30');
+              const pack = await (await fetch('./js/problems/url-shortener.json?v=30')).json();
+              out.briefValidates = (() => {
+                try { briefMod.validateBrief(pack); return true; } catch (e) { return 'threw: ' + e.message; }
+              })();
+              const briefErr = (mut) => {
+                const p = JSON.parse(JSON.stringify(pack));
+                mut(p);
+                try { briefMod.validateBrief(p); return 'no-throw'; } catch (e) { return e.message; }
+              };
+              out.briefGistErr = briefErr((p) => { p.interviewer_brief.gist = '   '; });
+              out.briefDimsErr = briefErr((p) => { delete p.interviewer_brief.dimensions['5']; });
+              out.briefAnchorsErr = briefErr((p) => { delete p.interviewer_brief.anchors['6']; });
+              out.briefProbesErr = briefErr((p) => { p.interviewer_brief.probes = p.interviewer_brief.probes.slice(0, 5); });
+              out.briefProbeStepErr = briefErr((p) => { p.interviewer_brief.probes[0].step = 6; });
+              out.briefProbeQErr = briefErr((p) => { p.interviewer_brief.probes[0].q = '  '; });
+
+              const bargs = (over) => Object.assign(
+                { problem: pack, currentStep: 4, revealed: [2], helpMode: 'learning',
+                  probeCap: 2, probesAsked: 0 }, over);
+              const b4 = briefMod.briefBlock(bargs({}));
+              out.briefBlock = {
+                hasGist: b4.includes('read-heavy key-value service'),
+                hasStepDim: b4.includes('Hot key: one viral link'),
+                noOtherStepDim: !b4.includes('Geo: serving redirects'),
+                hidesRevealedAnchor: !b4.includes('Hearing the imbalance'),
+                keepsUnrevealedAnchor: b4.includes('Hearing the target'),
+                hasProbeRule: b4.includes('[[probe: N]]'),
+                hasProbes: b4.includes('viral on live television'),
+                hasBudget: b4.includes('at most 2 more'),
+              };
+              out.briefGates = {
+                capZero: !briefMod.briefBlock(bargs({probeCap: 0})).includes('viral on live television'),
+                testing: !briefMod.briefBlock(bargs({helpMode: 'testing'})).includes('viral on live television'),
+                usedUp: briefMod.briefBlock(bargs({probesAsked: 2})).includes('used up'),
+                noBrief: briefMod.briefBlock(bargs({problem: {id: 'x'}})) === '',
+              };
+              const withBrief = assemble.assembleInterviewerPrompt(Object.assign(
+                bargs({}), { constraintMode: 'unconstrained' }));
+              out.promptBrief = withBrief[0].content.includes('Interviewer brief');
+              out.promptNoBrief = !assemble.assembleInterviewerPrompt(
+                {problem, helpMode: 'learning', constraintMode: 'unconstrained'})[0].content
+                .includes('Interviewer brief');
+
+              const parsedProbe = engineMod.parseControlLines(
+                'A viral link. [[step: 4]]\\n[[probe: 5]]\\n[[probe: 5]]');
+              out.probeLines = {
+                probes: parsedProbe.probes.join(','),
+                stripped: !parsedProbe.clean.includes('[[probe'),
+                step: parsedProbe.step,
+              };
+              const ps = state.newSession(pack, {helpMode: 'learning'});
+              ps.currentStep = 4;
+              state.countProbe(ps, 5);
+              state.countProbe(ps, 0);
+              state.countProbe(ps, 99);
+              state.countProbe(ps, 5);
+              out.probeCount = JSON.stringify(ps.probesUsed);
+
               const briefing = assemble.assembleBriefingMessages({problem});
               out.briefingTurns = briefing.length;
 
@@ -158,6 +219,21 @@ def main():
                 "learningPassive": True,
                 "learningDefaultNoPointer": True,
                 "learningProactive": True,
+                "briefValidates": True,
+                "briefGistErr": "problem url-shortener: interviewer_brief gist needs text",
+                "briefDimsErr": "problem url-shortener: interviewer_brief dimensions needs keys 1 to 5",
+                "briefAnchorsErr": "problem url-shortener: interviewer_brief anchors needs one entry per hidden item",
+                "briefProbesErr": "problem url-shortener: interviewer_brief needs at least 6 probes (template floor)",
+                "briefProbeStepErr": "problem url-shortener: interviewer_brief probe 1 needs step 1 to 5",
+                "briefProbeQErr": "problem url-shortener: interviewer_brief probe 1 needs text",
+                "briefBlock": {"hasGist": True, "hasStepDim": True, "noOtherStepDim": True,
+                               "hidesRevealedAnchor": True, "keepsUnrevealedAnchor": True,
+                               "hasProbeRule": True, "hasProbes": True, "hasBudget": True},
+                "briefGates": {"capZero": True, "testing": True, "usedUp": True, "noBrief": True},
+                "promptBrief": True,
+                "promptNoBrief": True,
+                "probeLines": {"probes": "5,5", "stripped": True, "step": 4},
+                "probeCount": '{"4":2}',
                 "briefingTurns": 2,
                 "context": {"systemBlocks": 3, "hasLedger": True, "hasTracker": True,
                             "anchorInstruction": True,

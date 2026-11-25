@@ -1,5 +1,7 @@
 // TADSDI problems.js: problem bank loader (DESIGN.md 5.1).
 
+import { validateBrief } from './prompts/brief.js?v=30';
+
 export const PROBLEM_SLUGS = [
   'url-shortener',
   'rate-limiter',
@@ -13,14 +15,17 @@ export const PROBLEM_SLUGS = [
 
 const cache = new Map();
 
+// The bank never feeds the interviewer a malformed prep pack: a problem
+// that carries one gets it validated here, at load time (DESIGN.md 7).
 export async function loadProblem(slug) {
   if (cache.has(slug)) return cache.get(slug);
-  const url = new URL(`problems/${slug}.json?v=29`, import.meta.url).href;
+  const url = new URL(`problems/${slug}.json?v=30`, import.meta.url).href;
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`problem bank entry not found: ${slug} (HTTP ${response.status})`);
   }
   const problem = await response.json();
+  validateBrief(problem);
   cache.set(slug, problem);
   return problem;
 }

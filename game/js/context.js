@@ -14,9 +14,9 @@
 // narrative and lines for the ledger. Game code checks the shape and applies
 // it; nothing that the model returns is used as it arrives.
 
-import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=29';
-import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=29';
-import { extractJsonObject } from './json-reply.js?v=29';
+import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=30';
+import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=30';
+import { extractJsonObject } from './json-reply.js?v=30';
 
 export const DEFAULT_CONTEXT_TOKENS = 32000;
 export const THRESHOLD = 0.6;
@@ -49,6 +49,18 @@ function trackerText(session) {
     `${session.currentStep} (${STEPS[session.currentStep - 1]}). Stay within ` +
     `the current step's job: material that belongs to a later step waits ` +
     `for its step.`;
+}
+
+// The per-turn probe budget line. It rides the never-compressed head, so a
+// compressed transcript cannot lose the count. Learning mode with a cap
+// above zero only; a problem without a pack has no probes at all.
+function probeText(session) {
+  if (!session.problem.interviewer_brief) return '';
+  if (session.helpMode !== 'learning') return '';
+  const cap = session.maxProbesPerStep;
+  if (!cap || cap <= 0) return '';
+  const asked = (session.probesUsed && session.probesUsed[session.currentStep]) || 0;
+  return `Prepared probes this step: ${asked} of ${cap} asked so far.`;
 }
 
 // Ledger lines that are not an artifact: the Artifacts block carries every
@@ -93,9 +105,18 @@ export function headMessages(session) {
       helpMode: session.helpMode,
       constraintMode: session.constraintMode,
       proactiveHints: session.proactiveHints === true,
+      currentStep: session.currentStep,
+      revealedGuidance: session.ledger.revealedGuidance,
+      probeCap: session.maxProbesPerStep,
+      probesAsked: (session.probesUsed && session.probesUsed[session.currentStep]) || 0,
     }),
-    { role: 'system', content: `${trackerText(session)}\n\n${ledgerText(session, artifactIds)}` },
   ];
+  const probe = probeText(session);
+  head.push({
+    role: 'system',
+    content: `${trackerText(session)}${probe ? `\n\n${probe}` : ''}` +
+      `\n\n${ledgerText(session, artifactIds)}`,
+  });
   if (session.artifacts.length) {
     head.push({ role: 'system', content: artifactsText(session) });
   }

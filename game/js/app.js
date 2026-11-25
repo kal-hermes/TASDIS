@@ -1,10 +1,10 @@
 // TADSDI app.js: entry point and screen routing.
 
-import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=29';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=29';
-import { initExport } from './export.js?v=29';
-import { initSubmission } from './submission.js?v=29';
-import { loadProblems } from './problems.js?v=29';
+import { initSettings, howToAtStart, setHowToAtStart } from './settings.js?v=30';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=30';
+import { initExport } from './export.js?v=30';
+import { initSubmission } from './submission.js?v=30';
+import { loadProblems } from './problems.js?v=30';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -92,20 +92,26 @@ function renderMenu() {
   }
 }
 
+// Picks the slug for a new interview: the selected one, or a random one
+// among the entries that loaded. Null when nothing loaded.
+function pickProblemSlug(slug) {
+  if (slug && !el('problem-random').checked) return slug;
+  const available = [...problems.entries()].filter(([, p]) => p);
+  if (!available.length) return null;
+  return available[Math.floor(Math.random() * available.length)][0];
+}
+
 async function startFromMenu() {
-  let slug = selectedProblemSlug();
-  if (el('problem-random').checked || !slug) {
-    const available = [...problems.entries()].filter(([, p]) => p);
-    if (!available.length) {
-      el('menu-status').textContent = 'No problems loaded. Check the server.';
-      return;
-    }
-    slug = available[Math.floor(Math.random() * available.length)][0];
+  const slug = pickProblemSlug(selectedProblemSlug());
+  if (!slug) {
+    el('menu-status').textContent = 'No problems loaded. Check the server.';
+    return;
   }
   const prefs = {
     helpMode: el('help-mode').value,
     constraintMode: el('constraint-mode').value,
     proactiveHints: el('proactive-guidance').value === 'on',
+    maxProbesPerStep: Number(el('probe-cap').value) || 0,
   };
   const timerMinutes = Number(el('timer-preset').value) || 0;
   el('menu-status').textContent = '';
@@ -168,6 +174,7 @@ export function initApp() {
   });
   const syncProactive = () => {
     el('proactive-guidance').disabled = el('help-mode').value === 'testing';
+    el('probe-cap').disabled = el('help-mode').value === 'testing';
   };
   el('help-mode').addEventListener('change', syncProactive);
   syncProactive();

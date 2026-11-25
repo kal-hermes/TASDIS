@@ -19,6 +19,9 @@ export function newSession(problem, prefs = {}) {
     artifacts: [],
     coveredSteps: [],
     currentStep: 1,
+    maxProbesPerStep: Number.isFinite(prefs.maxProbesPerStep)
+      ? prefs.maxProbesPerStep : 2,
+    probesUsed: {},
     ledger: {
       components: [],
       estimates: [],
@@ -92,6 +95,17 @@ export function coverStep(session, n) {
 
 export function setCurrentStep(session, n) {
   if (n >= 1 && n <= 5) session.currentStep = n;
+}
+
+// The interviewer marks each prepared probe it asks with [[probe: N]].
+// N is the 1-based index in the problem's probe list. A number outside the
+// list is a mistake of the model: the game drops it. Counts land per step.
+export function countProbe(session, n) {
+  const brief = session.problem && session.problem.interviewer_brief;
+  const count = brief && Array.isArray(brief.probes) ? brief.probes.length : 0;
+  if (!Number.isInteger(n) || n < 1 || n > count) return;
+  const step = String(session.currentStep);
+  session.probesUsed[step] = (session.probesUsed[step] || 0) + 1;
 }
 
 function guidanceCount(session) {

@@ -26,6 +26,7 @@ HOWTO_TERMS = [
     "Help mode", "Learning", "Testing", "step tracker",
     "Constraints", "Unconstrained", "Constrained",
     "Proactive guidance", "Off",
+    "Prepared probes",                     # the per-step probe cap (learning only)
     "Timer",
     "local storage",                       # where API keys live
 ]
@@ -79,8 +80,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=29');
-              const exp = await import(base + 'js/export.js?v=29');
+              const state = await import(base + 'js/state.js?v=30');
+              const exp = await import(base + 'js/export.js?v=30');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',
@@ -159,7 +160,7 @@ def main():
             # button for the rest of the session. Steps unmarked: the
             # candidate can still end.
             page.evaluate("""async ([base, key]) => {
-              const state = await import(base + 'js/state.js?v=29');
+              const state = await import(base + 'js/state.js?v=30');
               const problem = await (await fetch(base + 'js/problems/url-shortener.json')).json();
               const session = state.newSession(problem, { helpMode: 'learning' });
               state.addMessage(session, 'interviewer', 'Here is the problem. Over to you.');
@@ -176,9 +177,29 @@ def main():
                 "the end control hides while the tracker is incomplete"
             print("  ok   end control: visible while steps 2 and 3 are unmarked")
 
+            # ---- F. the probe cap: menu select 0-5, default 2, frozen in
+            # testing, riding the session -------------------------------
+            d.open_menu()
+            opts = page.eval_on_selector_all(
+                '#probe-cap option', 'els => els.map(e => e.value)')
+            assert opts == ['0', '1', '2', '3', '4', '5'], f'probe cap options: {opts}'
+            assert page.eval_on_selector('#probe-cap', 'e => e.value') == '2', \
+                'probe cap default'
+            page.select_option('#help-mode', 'testing')
+            assert page.eval_on_selector('#probe-cap', 'e => e.disabled') is True, \
+                'the probe cap must freeze in testing mode'
+            page.select_option('#help-mode', 'learning')
+            assert page.eval_on_selector('#probe-cap', 'e => e.disabled') is False, \
+                'the probe cap must come back in learning mode'
+            d.start_session(help_mode='learning', probe_cap='3')
+            stored = d.stored_session()
+            assert stored['maxProbesPerStep'] == 3, stored.get('maxProbesPerStep')
+            assert stored['probesUsed'] == {}, stored.get('probesUsed')
+            print('  ok   probe cap: select 0-5, default 2, frozen in testing, rides the session')
+
             assert not errors, f"console/page errors: {errors}"
             browser.close()
-        print("M3 UI: PASS (how to play, transcript export, end control)")
+        print("M3 UI: PASS (how to play, transcript export, end control, probe cap)")
         return 0
     finally:
         server.terminate()

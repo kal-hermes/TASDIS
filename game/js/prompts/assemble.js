@@ -2,7 +2,8 @@
 // Block order: persona, problem, process, estimation reference, mode,
 // constraint. Returns an array of messages for the provider interface.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=29';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=30';
+import { briefBlock } from './brief.js?v=30';
 
 export const STEPS = [
   'Requirements and constraints',
@@ -112,21 +113,30 @@ candidate asks about something the list does not cover, tell them to assume
 anything reasonable; do not supply a number yourself.`;
 }
 
-// options: { problem, helpMode, constraintMode, proactiveHints }
+// options: { problem, helpMode, constraintMode, proactiveHints,
+//   currentStep, revealedGuidance, probeCap, probesAsked }
 export function assembleInterviewerPrompt(options) {
   const { problem, helpMode = 'learning', constraintMode = 'unconstrained',
-    proactiveHints = false } = options;
+    proactiveHints = false, currentStep = 1, revealedGuidance = [],
+    probeCap = 0, probesAsked = 0 } = options;
   const modeBlock = helpMode === 'testing'
     ? MODE_TESTING
     : MODE_LEARNING_BASE + (proactiveHints ? MODE_LEARNING_PROACTIVE : MODE_LEARNING_PASSIVE);
+  const brief = briefBlock({
+    problem, currentStep, revealed: revealedGuidance,
+    helpMode, probeCap, probesAsked,
+  });
   const blocks = [
     PERSONA,
     problemBlock(problem),
+  ];
+  if (brief) blocks.push(brief);
+  blocks.push(
     PROCESS,
     `Estimation reference table (authoritative for grading claims):\n${ESTIMATION_REFERENCE}`,
     modeBlock,
     constraintBlock(problem.constrained_variant, constraintMode),
-  ];
+  );
   return [{ role: 'system', content: blocks.join('\n\n---\n\n') }];
 }
 

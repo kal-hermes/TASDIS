@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Totally Accurate System Design Interview Simulator</title>
   <link rel="stylesheet" href="js/vendor/katex.min.css?v=1">
-  <link rel="stylesheet" href="css/main.css?v=29">
+  <link rel="stylesheet" href="css/main.css?v=30">
 </head>
 <body data-screen="menu">
   <header>
@@ -43,6 +43,16 @@
         <select id="proactive-guidance">
           <option value="off">Off (default)</option>
           <option value="on">On (may point at unexplored areas)</option>
+        </select>
+      </label>
+      <label>Prepared probes per step (learning mode only)
+        <select id="probe-cap">
+          <option value="0">0 (no prepared probes)</option>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
         </select>
       </label>
       <label>Timer
@@ -197,6 +207,10 @@
           <dd>Learning mode only. Off is the default: the interviewer answers what
               you ask and then waits. On: the interviewer can end a reply with one
               pointer to an area that you did not visit.</dd>
+          <dt>Prepared probes per step</dt>
+          <dd>Learning mode only. The interviewer holds a few prepared questions
+              for the current step. The select caps how many of them it may ask
+              in one step: 0 keeps it fully reactive, 2 is the default.</dd>
           <dt>Timer</dt>
           <dd>Off, or 15, 30, 45, or 60 minutes. The clock runs only on your turn.
               It pauses while the interviewer responds, during a progress grade,
@@ -246,6 +260,6 @@
 
   <script src="js/vendor/katex.min.js?v=1"></script>
   <script src="js/vendor/mermaid.min.js?v=1"></script>
-  <script type="module" src="js/app.js?v=29"></script>
+  <script type="module" src="js/app.js?v=30"></script>
 </body>
 </html>

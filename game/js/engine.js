@@ -7,14 +7,15 @@
 import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
-} from './state.js?v=29';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=29';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=29';
-import { assembleContext, compressIfNeeded } from './context.js?v=29';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=29';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=29';
-import { renderLatex } from './render-latex.js?v=29';
-import { renderMermaid } from './render-mermaid.js?v=29';
+  countProbe,
+} from './state.js?v=30';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=30';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=30';
+import { assembleContext, compressIfNeeded } from './context.js?v=30';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=30';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=30';
+import { renderLatex } from './render-latex.js?v=30';
+import { renderMermaid } from './render-mermaid.js?v=30';
 
 let session = null;
 let busy = false;
@@ -26,9 +27,10 @@ let tickInterval = null;
 const STEP_RE = /\[\[step:\s*([1-5])\]\]/g;
 const COVERED_RE = /\[\[covered:\s*([1-5])\]\]/g;
 const GUIDANCE_RE = /\[\[guidance:\s*(\d+)\]\]/g;
+const PROBE_RE = /\[\[probe:\s*(\d+)\]\]/g;
 // Every control line leaves the text, also one with a value out of range:
 // the candidate never sees a line of the protocol.
-const CONTROL_LINE_RE = /\[\[(?:step|covered|guidance):[^\]\n]*\]\]/g;
+const CONTROL_LINE_RE = /\[\[(?:step|covered|guidance|probe):[^\]\n]*\]\]/g;
 
 // The interviewer ends a reply with control lines. The game reads them and
 // shows the rest. A value out of range changes nothing: a step stays as it
@@ -36,18 +38,21 @@ const CONTROL_LINE_RE = /\[\[(?:step|covered|guidance):[^\]\n]*\]\]/g;
 export function parseControlLines(text) {
   const covered = [];
   const guidance = [];
+  const probes = [];
   let m;
   COVERED_RE.lastIndex = 0;
   while ((m = COVERED_RE.exec(text)) !== null) covered.push(Number(m[1]));
   GUIDANCE_RE.lastIndex = 0;
   while ((m = GUIDANCE_RE.exec(text)) !== null) guidance.push(Number(m[1]));
+  PROBE_RE.lastIndex = 0;
+  while ((m = PROBE_RE.exec(text)) !== null) probes.push(Number(m[1]));
   STEP_RE.lastIndex = 0;
   let step = null;
   while ((m = STEP_RE.exec(text)) !== null) step = Number(m[1]);
   const clean = text.replace(CONTROL_LINE_RE, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-  return { clean, step, covered, guidance };
+  return { clean, step, covered, guidance, probes };
 }
 
 // ---- DOM helpers -----------------------------------------------------
@@ -262,7 +267,18 @@ async function runRevealCheck(session, replyText) {
   }
 }
 
-async function runLlmTurn({ purpose, helpRequest }) {
+// Applies the control lines of one interviewer reply to the session: the
+// step move, the coverage marks, the ledger reveals, and the probe counts.
+// A value out of range changes nothing; the parsers already dropped junk.
+function applyControlLines(session, lines) {
+  const { step, covered, guidance, probes } = lines;
+  if (step) setCurrentStep(session, step);
+  for (const c of covered) coverStep(session, c);
+  revealGuidance(session, guidance);
+  for (const p of probes) countProbe(session, p);
+}
+
+export async function runLlmTurn({ purpose, helpRequest }) {
   busy = true;
   renderControls();
   const streamEl = streamingEl();
@@ -284,16 +300,14 @@ async function runLlmTurn({ purpose, helpRequest }) {
       streamEl.textContent += chunk;
       streamEl.scrollIntoView({ behavior: 'auto', block: 'end' });
     }, options);
-    const { clean, step, covered, guidance } = parseControlLines(raw);
+    const { clean, step, covered, guidance, probes } = parseControlLines(raw);
     streamEl.textContent = clean;
     addMessage(session, 'interviewer', clean, {
       step: step || session.currentStep,
       ...(purpose === 'help' ? { helpReply: true } : {}),
     });
-    if (step) setCurrentStep(session, step);
-    for (const c of covered) coverStep(session, c);
-    revealGuidance(session, guidance);
     if (purpose !== 'help') helpStage = 0;
+    applyControlLines(session, { step, covered, guidance, probes });
     await runRevealCheck(session, clean);
   } catch (err) {
     ok = false;

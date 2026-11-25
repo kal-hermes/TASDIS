@@ -34,12 +34,12 @@ def set_text_role(page, **fields):
 
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=29');
-  const context = await import(base + 'js/context.js?v=29');
-  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=29');
-  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=29');
-  const providers = await import(base + 'js/providers.js?v=29');
-  const settings = await import(base + 'js/settings.js?v=29');
+  const state = await import(base + 'js/state.js?v=30');
+  const context = await import(base + 'js/context.js?v=30');
+  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=30');
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=30');
+  const providers = await import(base + 'js/providers.js?v=30');
+  const settings = await import(base + 'js/settings.js?v=30');
   const out = {};
   const CTX = 16000;  // tokens: a mid-size window that a long transcript outgrows
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
@@ -169,6 +169,26 @@ UNITS = """async (base) => {
   const system = sum.buildSummarizeMessages(big, { from: 0, to: 2 })[0].content;
   out.prompt = { json: system.includes('"narrative"') && system.includes('"open_threads"'),
     addsNothing: /Add nothing/.test(system), keepsNumbers: /unit/.test(system) };
+
+  // 12. the probe budget anchor rides the head only when it applies
+  try {
+  const pack = await (await fetch(base + 'js/problems/url-shortener.json?v=30')).json();
+  const probeSession = (helpMode, cap) => {
+    const s = state.newSession(pack, { helpMode });
+    s.maxProbesPerStep = cap;
+    s.currentStep = 4;
+    s.probesUsed = { '4': 1 };
+    return context.headMessages(s).map((m) => m.content).join('\\n');
+  };
+  const learnHead = probeSession('learning', 2);
+  out.probeAnchor = {
+    learning: learnHead.includes('Prepared probes this step: 1 of 2 asked so far'),
+    testing: !probeSession('testing', 2).includes('Prepared probes this step'),
+    capZero: !probeSession('learning', 0).includes('Prepared probes this step'),
+    noBrief: !context.headMessages(state.newSession(problem, { helpMode: 'learning' }))
+      .map((m) => m.content).join('\\n').includes('Prepared probes this step'),
+  };
+  } catch (e) { out.probeAnchor = { err: String(e && e.message || e) }; }
   return out;
 }"""
 
@@ -244,6 +264,9 @@ def main():
                    out["settingsDefault"] == 0 and out["settingsRead"] == 64000, out)
             expect("prompt: strict JSON, adds nothing, keeps numbers with units",
                    out["prompt"] == {"json": True, "addsNothing": True, "keepsNumbers": True}, out["prompt"])
+            expect("probe budget anchor: learning sees it, testing and cap 0 and no brief do not",
+                   out["probeAnchor"] == {"learning": True, "testing": True, "capZero": True,
+                                          "noBrief": True}, out["probeAnchor"])
             print("  ok   units: window, compression, idempotence, graders, failure, invalid, faults")
 
             # ---- browser: default settings never compress short interviews
@@ -270,7 +293,7 @@ def main():
             assert any(e["status"] == "summarized" for e in s["ledger"]["estimates"]), s["ledger"]
             assert page.locator("#engine-status").inner_text() == "", "status shows a failure"
             assembly = page.evaluate("""async ([base, session, tokens]) => {
-              const context = await import(base + 'js/context.js?v=29');
+              const context = await import(base + 'js/context.js?v=30');
               return context.assembleContext(session, { contextTokens: tokens })
                 .map((m) => m.content);
             }""", [MODULES, s, SMALL_CONTEXT])
@@ -285,7 +308,7 @@ def main():
             d.start_session(help_mode="learning")
             set_text_role(page, contextTokens=SMALL_CONTEXT)
             page.evaluate("""async ([base, n]) => {
-              const providers = await import(base + 'js/providers.js?v=29');
+              const providers = await import(base + 'js/providers.js?v=30');
               providers.setMockFaultQueue(Array.from({ length: n }, () => (
                 { kind: 'http', status: 500, purpose: 'summarize' })));
             }""", [MODULES, 5])

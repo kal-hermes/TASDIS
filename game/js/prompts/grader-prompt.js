@@ -3,7 +3,7 @@
 // the design ledger plus artifacts. The grader never sees the interview
 // live.
 
-import { ESTIMATION_REFERENCE } from './estimation.js?v=29';
+import { ESTIMATION_REFERENCE } from './estimation.js?v=30';
 
 export const DIAGNOSTIC_ROWS = [
   {

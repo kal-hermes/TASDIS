@@ -65,7 +65,7 @@ class Driver:
         self.page.wait_for_selector("#start-interview", state="visible")
 
     def start_session(self, problem="url-shortener", help_mode="learning",
-                      constraint="unconstrained", timer="0"):
+                      constraint="unconstrained", timer="0", probe_cap=None):
         page = self.page
         page.evaluate("slug => localStorage.removeItem('tadsdi.session.v1')", None)
         page.goto(f"{self.base}/index.html", wait_until="networkidle")
@@ -73,6 +73,8 @@ class Driver:
         page.select_option("#help-mode", help_mode)
         page.select_option("#constraint-mode", constraint)
         page.select_option("#timer-preset", timer)
+        if probe_cap is not None:
+            page.select_option("#probe-cap", probe_cap)
         page.click("#start-interview")
         page.wait_for_selector("#chat-log .chat-message.interviewer", timeout=15000)
         page.wait_for_selector("#interview-busy", state="hidden", timeout=15000)
