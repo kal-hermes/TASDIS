@@ -218,6 +218,47 @@ mock path records from the checker queue.
    backoff runs about 31 seconds before a dead letter. The bank load
    inspects every pack, so a malformed one fails the menu loudly.
 
+10. The candidate types each whole turn into one multi-line input
+    (`#candidate-input`, a textarea). Enter sends. Shift+Enter makes a
+    newline. A turn is any combination: prose only, prose with `$$latex$$`
+    blocks, prose with Mermaid fences, equations only, diagrams only, or
+    all of it at once. The three-tab submission panel is gone. The parser
+    (`js/turn-parse.js`) splits the text into ordered segments. Only
+    closed fences and balanced `$$` pairs become artifacts. An unclosed
+    fence or a lone `$$` stays prose, so a half-typed block never swallows
+    the rest of the turn. Each block lands in the ledger through the
+    normal artifact path, renders inline in the chat, and the interviewer
+    responds once per turn. Help detection reads the prose only, so a
+    diagram alone never triggers the hint ladder. A source the renderers
+    reject shows the render error inside the artifact box, and the chat
+    never breaks. Image attachments join the same segment model in
+    phase 2.
+
+Test: the parse units of `game/tests/m1_units.py` cover all
+combinations, ordering, the unclosed fence, the lone `$$`, and the blank
+input. The unified-turn section of `game/tests/m3_ui.py` covers the
+textarea, the gone panel, one mixed turn, and the recorded artifacts.
+The typed-turn flows of `game/tests/m1_e2e.py`,
+`game/tests/m3_selfplay.py`, and `game/tests/deployed_smoke.py` cover
+the rest. All were written first and red.
+
+11. The settings table carries a Thinking effort select per role (off by
+    default, or low, medium, high). The old "Context window of the text
+    model" number field is gone. Game code maps the effort to request
+    parameters (`thinkingParams` in `js/providers.js`). OpenAI-style
+    calls carry a `reasoning_effort` field. Anthropic-style calls carry a
+    thinking budget (2048, 8192, 16384) plus a raised `max_tokens`. The
+    mock carries nothing. The field applies to the text and vision
+    roles. Wire capture proves the parameter rides the request at high
+    and disappears at off.
+
+Test: the mapping units of `game/tests/m1_units.py` cover all providers,
+all efforts, and the unknown effort that sends nothing. The settings
+section of `game/tests/m3_ui.py` covers the per-row select, the off
+default, and persistence. The wire captures of `game/tests/m3_selfplay.py`
+prove the high case rides the wire, off sends nothing, and the Anthropic
+budget is present. All were written first and red.
+
 Test: the brief units of `game/tests/m1_units.py` (validation, block
 assembly, mode and cap gates, probe lines). Also the probe-cap section
 of `game/tests/m3_ui.py`, the budget-anchor section of

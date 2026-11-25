@@ -93,9 +93,11 @@ All LLM traffic goes through one provider module. Three provider roles exist:
 so tests run offline.
 
 The UI has five screens driven by a session state machine: menu, briefing,
-interview, grading, and feedback. A sidebar shows the five-step tracker. A
-submission panel inserts calculations and diagrams into the chat as
-artifacts.
+interview, grading, and feedback. A sidebar shows the five-step tracker. The
+candidate types each whole turn into one multi-line input. A turn mixes
+prose with LaTeX blocks in `$$dollars$$`. A turn can also carry Mermaid
+blocks in fenced code, in any order. The game turns each block into an
+artifact and keeps the prose as chat messages.
 
 ## 4. Directory layout
 
@@ -156,10 +158,15 @@ system.
 ### 5.2 Settings (localStorage, edited in the settings dialog)
 
 - Providers, one row per role (`text`, `vision`, `image`): provider id
-  (`openai`, `anthropic`, or `openai-compatible`), base URL, model name, and
-  API key. The key is optional: an endpoint that needs no key (a gateway, a
-  local model server) gets its call without an auth header. A set key stays
-  in localStorage and rides only in the auth header to the provider.
+  (`openai`, `anthropic`, or `openai-compatible`), base URL, model name,
+  API key, and thinking effort. The effort is `off` by default, or `low`,
+  `medium`, or `high`. The key is optional: an endpoint that needs no key
+  (a gateway, a local model server) gets its call without an auth header.
+  A set key stays in localStorage and rides only in the auth header to the
+  provider. The thinking effort maps to request parameters in game code.
+  OpenAI-style calls carry a `reasoning_effort` field. Anthropic-style
+  calls carry a thinking budget. The mock provider carries nothing. The
+  field applies to the text and vision roles. The image role ignores it.
 - Interview preferences: learning or testing mode, constrained or
   unconstrained mode, persona (phase 2), language (phase 2). The menu also
   offers a proactive-guidance preference (learning mode only, off by
@@ -221,10 +228,12 @@ States: `MENU`, `BRIEFING`, `INTERVIEW`, `GRADING`, `FEEDBACK`.
 - `MENU`: pick a problem (or random), mode, and constraints. Then start.
 - `BRIEFING`: the interviewer opens with `vague_prompt` in character.
 - `INTERVIEW`: free-form chat. The engine tags interviewer messages with the
-  step they belong to and drives the step tracker. The user submits
-  calculations and diagrams through the submission panel, and the
-  interviewer responds to each submission in the same channel. In learning
-  mode, the user can request a mid-interview grade at any time
+  step they belong to and drives the step tracker. The candidate types one
+  turn at a time into a multi-line input. A turn is any combination: prose
+  only, prose with equations or diagrams, equations only, or diagrams only.
+  Each equation or diagram becomes an artifact tagged with the current
+  step, and the interviewer responds once per turn in the same channel. In
+  learning mode, the user can request a mid-interview grade at any time
   (section 9.1).
 - `GRADING`: a separate grader call over the full transcript and artifacts.
 - `FEEDBACK`: score, failing diagnostic rows, missed items, and per-artifact
@@ -363,14 +372,19 @@ The assembled interviewer context has layers:
 Assembly with the recency window lands in M1. The summarization trigger
 lands in M3.
 
-## 8. Submission and rendering
+## 8. Turn input and rendering
 
-One submission panel with three tabs: LaTeX (textarea plus live KaTeX
-preview), Mermaid (textarea plus live rendered preview), and prose. The
-panel inserts the artifact into the chat as a message tagged with the
-current step. Phase 2 adds an image tab. That tab sends the picture to the
-vision model and shows the Mermaid transcription. The user corrects the
-transcription before submission, so vision errors stay out of the grade.
+One multi-line input holds a whole candidate turn (DESIGN.md 6). The parser
+splits it into ordered segments: prose, LaTeX blocks in `$$dollars$$`, and
+Mermaid or LaTeX blocks in fenced code. Only closed fences and balanced
+`$$` pairs become artifacts. An unclosed fence or a lone `$$` stays prose,
+so a half-typed block never swallows the rest of the turn. Each artifact
+renders in the chat as math or a drawing, tagged with the current step,
+and the interviewer responds once per turn. Prose keeps its place between
+the blocks. Phase 2 adds image attachments as a further segment type. The
+picture goes to the vision model and the Mermaid transcription comes back.
+The user corrects the transcription, so vision errors stay out of the
+grade.
 
 ## 9. Grading design
 
