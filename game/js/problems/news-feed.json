@@ -25,5 +25,77 @@
     "Delete and edit propagation into cached feeds",
     "Freshness of the ranking features"
   ],
-  "constrained_variant": "AWS, ScyllaDB, Kafka, CloudFront"
+  "constrained_variant": "AWS, ScyllaDB, Kafka, CloudFront",
+  "interviewer_brief": {
+    "gist": "A read-mostly timeline service. Fifty million daily users each follow about two hundred accounts, so every post multiplies into two hundred deliveries. The design question is where that multiplication happens: at write time into per-user feeds, or at read time from the author's timeline.",
+    "dimensions": {
+      "1": [
+        "About 50 million daily users, each following about 200 accounts",
+        "Reads outnumber writes about 100 to 1",
+        "The first feed page loads in under 200 ms at p95",
+        "A post lands in follower feeds within a few seconds, so strict global order is not required",
+        "A strong candidate asks for user counts, follow graph shape, and freshness tolerance instead of inventing them."
+      ],
+      "2": [
+        "Two candidate shapes: fan out on write into per-user feeds, or merge on read from followed authors",
+        "The read to write ratio of about 100 to 1 argues for precomputed feeds",
+        "Sketch the write path: post, fan-out, feed store; and the read path: user, feed page",
+        "A strong candidate names both shapes and picks one from the ratio."
+      ],
+      "3": [
+        "The per-user feed store keeps the newest 1000 posts, a fixed window with cheap eviction",
+        "Feed entries hold post references, not copies of media",
+        "Storage lands near 50 billion feed entries across users",
+        "Paging by post id or rank keeps the 200 ms page inside the store's happy path",
+        "A strong candidate sizes the feed store and keeps media out of it."
+      ],
+      "4": [
+        "Fan-out is the bottleneck: about 100 million posts per day times 200 followers lands near 231 thousand feed inserts per second",
+        "Celebrity accounts with millions of followers cannot fan out synchronously, so the hybrid splits normal writes from huge ones",
+        "Huge accounts merge at read time from the author timeline; normal accounts precompute",
+        "A queue absorbs the fan-out burst; a few seconds of delay is inside the requirement",
+        "A strong candidate spots the celebrity problem without being told."
+      ],
+      "5": [
+        "Every post carries images and short video, so the feed serves references to an object store and CDN",
+        "The first page weights recent, engageable posts, not strict newest",
+        "Ordering within a few seconds is fine; services need no global clock",
+        "A strong candidate moves bytes to the CDN and keeps the feed index small."
+      ]
+    },
+    "anchors": {
+      "1": "Hearing the graph: the candidate states 50 million users and about 200 follows each, and connects follows to fan-out cost",
+      "2": "Hearing the imbalance: the candidate states reads outnumber writes about 100 to 1 and lets it pick precomputed feeds",
+      "3": "Hearing the budget: the candidate targets under 200 ms at p95 for the first page",
+      "4": "Hearing the freshness: the candidate accepts seconds of delay and drops strict ordering as a requirement",
+      "5": "Hearing the window: the candidate stores the newest 1000 posts per user with cheap eviction",
+      "6": "Hearing the media: the candidate plans object storage and CDN references for images and short video"
+    },
+    "probes": [
+      {
+        "step": 1,
+        "q": "A user follows a celebrity with 50 million followers. What happens when that celebrity posts?"
+      },
+      {
+        "step": 2,
+        "q": "Fan out on write or merge on read: what does the 100 to 1 ratio tell you to pick?"
+      },
+      {
+        "step": 3,
+        "q": "The feed page must render in 200 milliseconds. Where do the images and the short video come from?"
+      },
+      {
+        "step": 4,
+        "q": "Your fan-out queue is 30 seconds behind during a live sports event. What does the user see, and is that acceptable?"
+      },
+      {
+        "step": 4,
+        "q": "Storage keeps the newest 1000 posts per user. A user scrolls past post 1000. What happens?"
+      },
+      {
+        "step": 5,
+        "q": "Two posts arrive three seconds apart from two different authors. Does the feed promise an order between them?"
+      }
+    ]
+  }
 }

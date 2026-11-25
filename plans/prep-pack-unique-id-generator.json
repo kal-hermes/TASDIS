@@ -1,0 +1,71 @@
+{
+  "gist": "A 64-bit counter that never collides across data centers. Ten million IDs per second, roughly time ordered, answered locally in under a millisecond with no network round trip. The whole design is a bit budget: how to split 64 bits between time, machine, and sequence.",
+  "dimensions": {
+    "1": [
+      "About 10 million IDs per second at peak across all services",
+      "IDs are unique across data centers and never reused",
+      "IDs are roughly time ordered so a one hour range scan reads few pages",
+      "A strong candidate asks for rate, ordering strength, and the bit budget instead of inventing them."
+    ],
+    "2": [
+      "Two shapes: a central issuing service, or local generation from a machine id plus time",
+      "A central service needs a network round trip per ID; the requirement forbids that",
+      "Sketch the local shape: machine id assigned once, timestamp and sequence fill the rest",
+      "A strong candidate rejects the central issuer on the round trip requirement alone."
+    ],
+    "3": [
+      "64 bits split like: 41 bits of milliseconds, 10 bits of machine, 12 bits of sequence",
+      "41 bits of milliseconds covers about 70 years; 12 bits of sequence gives 4096 IDs per millisecond per machine, about 4 million per second",
+      "Three machines cover the 10 million per second peak; 1024 machine ids give huge headroom",
+      "Rough ordering falls out of the timestamp bits; only IDs within one millisecond on one machine need the sequence",
+      "A strong candidate does the bit arithmetic out loud and checks the peak against it."
+    ],
+    "4": [
+      "The bottleneck is the bit budget, not throughput: 4096 IDs per millisecond per machine bounds burst on one node",
+      "Burst beyond 4096 per millisecond spills to another machine or waits for the next millisecond",
+      "Machine id assignment happens once at boot through coordination, not per ID",
+      "A local call answers in under 1 ms because no network ride sits in the path",
+      "A strong candidate knows the sequence limit and where overflow goes."
+    ],
+    "5": [
+      "A clock that steps back up to 5 seconds must not reuse sequence space: wait out the drift or bump a generation",
+      "Time ordering survives data center boundaries because timestamps compare across sites",
+      "Range scans on a one hour window read a narrow time band of the index",
+      "A strong candidate explains what breaks if the clock lies, and bounds it."
+    ]
+  },
+  "anchors": {
+    "1": "Hearing the rate: the candidate states 10 million IDs per second at peak",
+    "2": "Hearing the uniqueness domain: the candidate guarantees uniqueness across data centers with no reuse ever",
+    "3": "Hearing the order: the candidate makes IDs roughly time ordered so one hour scans read few pages",
+    "4": "Hearing the locality: the candidate generates locally with no network round trip per ID, under 1 ms",
+    "5": "Hearing the budget: the candidate fits every ID in 64 bits and splits time, machine, and sequence",
+    "6": "Hearing the clock: the candidate tolerates a 5 second backward step without reusing IDs"
+  },
+  "probes": [
+    {
+      "step": 1,
+      "q": "IDs must never be reused. What does 'never' cost you when a machine restarts mid-millisecond?"
+    },
+    {
+      "step": 2,
+      "q": "Why not a database that hands out IDs? What does the requirement forbid?"
+    },
+    {
+      "step": 3,
+      "q": "Split 64 bits your way. How many years does your timestamp last, and how many IDs per second can one machine emit?"
+    },
+    {
+      "step": 4,
+      "q": "One machine gets a burst of 10 thousand ID requests in one millisecond. What exactly happens?"
+    },
+    {
+      "step": 4,
+      "q": "The clock on one node jumps back 5 seconds. Walk me through the IDs it emits next."
+    },
+    {
+      "step": 5,
+      "q": "Your service stores IDs in a database index. Why does rough time order matter for a one hour range scan?"
+    }
+  ]
+}

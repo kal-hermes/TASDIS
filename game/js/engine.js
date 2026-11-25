@@ -8,14 +8,14 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=30';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=30';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=30';
-import { assembleContext, compressIfNeeded } from './context.js?v=30';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=30';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=30';
-import { renderLatex } from './render-latex.js?v=30';
-import { renderMermaid } from './render-mermaid.js?v=30';
+} from './state.js?v=31';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=31';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=31';
+import { assembleContext, compressIfNeeded } from './context.js?v=31';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=31';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=31';
+import { renderLatex } from './render-latex.js?v=31';
+import { renderMermaid } from './render-mermaid.js?v=31';
 
 let session = null;
 let busy = false;

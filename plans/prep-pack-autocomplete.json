@@ -1,0 +1,70 @@
+{
+  "gist": "A top-ten service on a firehose. Eight billion searches a day times ten keystroke requests is about 926 thousand requests per second, and every answer is the same shape: the top ten completions of a prefix. The design is one small, hot, hourly-refreshed index served from memory.",
+  "dimensions": {
+    "1": [
+      "About 8 billion searches per day, about 10 keystroke requests per search, so about 926 thousand requests per second",
+      "Answers land in under 100 ms at p99",
+      "Only the top 10 suggestions per prefix matter",
+      "A strong candidate multiplies searches by keystrokes and asks for the latency budget instead of inventing them."
+    ],
+    "2": [
+      "A prefix service answers from memory, not from the search backend",
+      "The request is tiny and cache friendly at the edge",
+      "Sketch the path: keystroke, edge, prefix index, top 10 back",
+      "A strong candidate keeps the search index out of the keystroke path."
+    ],
+    "3": [
+      "The index covers about 100 million distinct queries, ranked by frequency over the last 24 hours",
+      "Trie or precomputed top-10 per prefix; only hot prefixes need their own list",
+      "Top 10 is small enough to ship as one cached payload per prefix",
+      "A strong candidate picks a structure where the answer is precomputed, not computed per keystroke."
+    ],
+    "4": [
+      "About 926 thousand requests per second is the bottleneck; the index lives in memory, replicated near users",
+      "The trend refresh runs hourly: a batch job rebuilds ranks from the last 24 hours, then swaps",
+      "A stale index for minutes is fine; recomputing per request is not",
+      "The 2 percent banned list filters at index build and again at serve",
+      "A strong candidate separates the per-hour build from the per-keystroke serve."
+    ],
+    "5": [
+      "The hourly rank swap bounds staleness without touching the hot path",
+      "Prefix caching at the edge absorbs repeat keystroke storms",
+      "Banned terms drop before they reach the suggestion list, at build and at serve",
+      "A strong candidate talks about swap atomicity so no request sees a half-built index."
+    ]
+  },
+  "anchors": {
+    "1": "Hearing the multiplier: the candidate states about 926 thousand keystroke requests per second",
+    "2": "Hearing the budget: the candidate targets under 100 ms at p99",
+    "3": "Hearing the shape: the candidate serves a precomputed top 10 per prefix",
+    "4": "Hearing the trend: the candidate rebuilds ranks from the last 24 hours and swaps hourly",
+    "5": "Hearing the index size: the candidate plans for about 100 million distinct queries in memory",
+    "6": "Hearing the filter: the candidate drops the 2 percent banned queries at build time and at serve time"
+  },
+  "probes": [
+    {
+      "step": 1,
+      "q": "The user typed three letters. Where does the answer come from, and what does it cost?"
+    },
+    {
+      "step": 2,
+      "q": "Your p99 is 120 milliseconds. What are the first two places the time goes?"
+    },
+    {
+      "step": 3,
+      "q": "One hundred million distinct queries. Do you precompute the top ten for every possible prefix? Why or why not?"
+    },
+    {
+      "step": 4,
+      "q": "A term goes viral right now. When does it appear in suggestions, and what had to run?"
+    },
+    {
+      "step": 4,
+      "q": "The rank swap happens while requests arrive. What does a request see mid-swap?"
+    },
+    {
+      "step": 5,
+      "q": "A banned term sneaks into the index overnight. When does it disappear from suggestions?"
+    }
+  ]
+}

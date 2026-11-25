@@ -43,9 +43,9 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const state = await import('./js/state.js?v=30');
-              const context = await import('./js/context.js?v=30');
-              const assemble = await import('./js/prompts/assemble.js?v=30');
+              const state = await import('./js/state.js?v=31');
+              const context = await import('./js/context.js?v=31');
+              const assemble = await import('./js/prompts/assemble.js?v=31');
               const out = {};
 
               const problem = {
@@ -112,9 +112,9 @@ def main():
               out.learningProactive = learnPro[0].content.includes('ONE gentle pointer');
 
               // ---- interviewer brief: validation, block, gates, probe lines
-              const briefMod = await import('./js/prompts/brief.js?v=30');
-              const engineMod = await import('./js/engine.js?v=30');
-              const pack = await (await fetch('./js/problems/url-shortener.json?v=30')).json();
+              const briefMod = await import('./js/prompts/brief.js?v=31');
+              const engineMod = await import('./js/engine.js?v=31');
+              const pack = await (await fetch('./js/problems/url-shortener.json?v=31')).json();
               out.briefValidates = (() => {
                 try { briefMod.validateBrief(pack); return true; } catch (e) { return 'threw: ' + e.message; }
               })();
@@ -171,6 +171,36 @@ def main():
               state.countProbe(ps, 99);
               state.countProbe(ps, 5);
               out.probeCount = JSON.stringify(ps.probesUsed);
+
+              // every bank problem carries a valid prep pack on the
+              // template floor: five dimensions, one anchor per hidden
+              // item, at least six probes
+              const bankSlugs = ['url-shortener', 'rate-limiter', 'news-feed',
+                'chat', 'autocomplete', 'web-crawler', 'unique-id-generator',
+                'notification-system'];
+              const packs = {};
+              const packErrs = {};
+              for (const slug of bankSlugs) {
+                const resp = await fetch(`./js/problems/${slug}.json?v=31`);
+                const pb = await resp.json();
+                const brief = pb.interviewer_brief;
+                let valid = false;
+                let err = '';
+                try {
+                  briefMod.validateBrief(pb);
+                  valid = true;
+                } catch (e) {
+                  err = String(e.message);
+                }
+                const floor = !!brief && valid
+                  && Object.keys(brief.dimensions || {}).length === 5
+                  && Object.keys(brief.anchors || {}).length === 6
+                  && (brief.probes || []).length >= 6;
+                packs[slug] = floor;
+                if (!floor) packErrs[slug] = err || 'below the floor';
+              }
+              out.packs = packs;
+              out.packErrs = packErrs;
 
               const briefing = assemble.assembleBriefingMessages({problem});
               out.briefingTurns = briefing.length;
@@ -234,6 +264,11 @@ def main():
                 "promptNoBrief": True,
                 "probeLines": {"probes": "5,5", "stripped": True, "step": 4},
                 "probeCount": '{"4":2}',
+                "packs": {"url-shortener": True, "rate-limiter": True,
+                          "news-feed": True, "chat": True, "autocomplete": True,
+                          "web-crawler": True, "unique-id-generator": True,
+                          "notification-system": True},
+                "packErrs": {},
                 "briefingTurns": 2,
                 "context": {"systemBlocks": 3, "hasLedger": True, "hasTracker": True,
                             "anchorInstruction": True,

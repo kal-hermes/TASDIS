@@ -25,5 +25,74 @@
     "Near-duplicate detection with a simhash or shingle set",
     "Re-crawl schedule and URL freshness score"
   ],
-  "constrained_variant": "AWS, S3, SQS, DynamoDB"
+  "constrained_variant": "AWS, S3, SQS, DynamoDB",
+  "interviewer_brief": {
+    "gist": "A polite queue with a dedup problem. About 400 pages per second on average, and every host allows only one request per second, so the crawler is mostly a scheduler. The other half is noticing that about a third of what it fetched, it already had.",
+    "dimensions": {
+      "1": [
+        "About 1 billion pages per month, about 400 pages per second on average",
+        "Politeness caps one request per second per host",
+        "Popular pages re-crawl every 24 hours, the rest every 30 days",
+        "A strong candidate converts the monthly budget into a rate and asks about politeness rules instead of inventing them."
+      ],
+      "2": [
+        "A frontier of URLs with priority and schedule, workers that fetch, and a store that keeps pages",
+        "The scheduler holds per-host queues so politeness is per host, not per worker",
+        "Sketch the loop: pull from frontier, check robots, fetch, extract links, push new URLs",
+        "A strong candidate draws the frontier as the heart of the system."
+      ],
+      "3": [
+        "robots.txt fetched and cached per host, obeyed for every request",
+        "A URL seen-set and content hashes dedupe pages before storage",
+        "The page store records fetch time per URL, so schedules re-crawl on their own clocks",
+        "A strong candidate caches robots per host and records what was allowed."
+      ],
+      "4": [
+        "The politeness ceiling is the bottleneck: 400 pages per second needs at least 386 hosts in flight",
+        "Slow or large hosts stall a worker; per-host queues stop one bad host from blocking the fleet",
+        "About 30 percent of fetches are near-duplicates, so dedup runs before parsing and storage, not after",
+        "A strong candidate sizes the seen-set and the hash store for billions of URLs."
+      ],
+      "5": [
+        "The frontier persists: a worker crash loses no queued URL, so the queue is durable or journaled",
+        "Re-crawl schedules ride the page record: fetched at, next fetch at",
+        "Rate limits and retries per host keep the crawl inside each site's terms",
+        "A strong candidate treats crash recovery as a first class requirement, not an afterthought."
+      ]
+    },
+    "anchors": {
+      "1": "Hearing the rate: the candidate converts 1 billion pages per month into about 400 pages per second",
+      "2": "Hearing the politeness: the candidate caps one request per second per host and builds per-host queues",
+      "3": "Hearing the schedule: the candidate re-crawls popular pages every 24 hours and the rest every 30 days",
+      "4": "Hearing the rules: the candidate fetches and obeys robots.txt per host and keeps site terms",
+      "5": "Hearing the duplicates: the candidate expects about 30 percent near-duplicates and dedupes by content hash",
+      "6": "Hearing the durability: the candidate guarantees a crashed worker loses no queued URL"
+    },
+    "probes": [
+      {
+        "step": 1,
+        "q": "Politeness allows one request per second per host. What does that imply about how many hosts you must crawl in parallel?"
+      },
+      {
+        "step": 2,
+        "q": "Walk me through one URL's life from discovery to stored page."
+      },
+      {
+        "step": 3,
+        "q": "A site forbids crawling two of its ten sections. Where is that enforced, and where is it remembered?"
+      },
+      {
+        "step": 4,
+        "q": "One host serves one page every eight seconds under load. What does your crawler do to it, and to itself?"
+      },
+      {
+        "step": 4,
+        "q": "About 30 percent of fetches turn out to be duplicates. Where in the pipeline do you catch them, and what do you skip?"
+      },
+      {
+        "step": 5,
+        "q": "A worker dies holding 50 queued URLs in memory. Show me what gets lost, if anything."
+      }
+    ]
+  }
 }

@@ -25,5 +25,74 @@
     "Group membership change history",
     "Presence tracking at scale and its write load"
   ],
-  "constrained_variant": "AWS, Cassandra, Kafka, API Gateway WebSocket"
+  "constrained_variant": "AWS, Cassandra, Kafka, API Gateway WebSocket",
+  "interviewer_brief": {
+    "gist": "A delivery system wearing a messaging costume. Fifty billion messages per day is about 579 thousand per second, and the hard requirements are order and no loss inside one conversation. Connections, queues, and receipts all serve that one promise.",
+    "dimensions": {
+      "1": [
+        "About 500 million daily users sending 50 billion messages per day, about 579 thousand per second",
+        "One to one chats and group chats up to 500 members",
+        "Under 500 ms at p95 from send to delivery when both sides are online",
+        "A strong candidate asks for scale, group shape, and the online delivery budget instead of inventing them."
+      ],
+      "2": [
+        "Persistent connections carry the realtime path; a message lands on a gateway, then routes to recipient connections",
+        "Group fan-out copies into per-conversation recipient queues, up to 500 recipients",
+        "Sketch the path: sender, gateway, router, recipient gateway, connection",
+        "A strong candidate draws the connection layer before the storage layer."
+      ],
+      "3": [
+        "Per-conversation ordering: sequence numbers assigned once, at one place",
+        "No loss: the sender retries until an ack, and the store acks before fan-out completes",
+        "The message store is keyed by conversation and appended in order",
+        "A strong candidate puts the order guarantee in one component and proves no-loss with the ack chain."
+      ],
+      "4": [
+        "The connection layer is the bottleneck: millions of live connections per gateway box, idle traffic included",
+        "Gateways and routers scale horizontally; routing needs only the recipient's current gateway",
+        "Offline recipients leave the realtime path: a push wakes them within 60 seconds, then a sync pulls missed messages on reconnect",
+        "A strong candidate separates the online path from the offline catch-up path."
+      ],
+      "5": [
+        "Read receipts and typing indicators ride the same connections as lightweight events, not as messages",
+        "Receipts are best effort, messages are guaranteed; the two promises differ",
+        "Multi-device sync reads from the per-conversation store, not from push",
+        "A strong candidate separates guaranteed messages from lightweight signals."
+      ]
+    },
+    "anchors": {
+      "1": "Hearing the scale: the candidate states 50 billion messages per day, about 579 thousand per second",
+      "2": "Hearing the shapes: the candidate supports one to one chats and groups up to 500 members",
+      "3": "Hearing the budget: the candidate targets under 500 ms at p95 for online delivery",
+      "4": "Hearing the order: the candidate assigns sequence inside one conversation and never loses a message",
+      "5": "Hearing the offline path: the candidate pushes within 60 seconds and syncs missed messages on reconnect",
+      "6": "Hearing the signals: the candidate carries read receipts and typing as lightweight events, distinct from messages"
+    },
+    "probes": [
+      {
+        "step": 1,
+        "q": "A group has 500 members and one member is offline. What must still happen for the other 499?"
+      },
+      {
+        "step": 2,
+        "q": "Walk me through the life of one message from send tap to the recipient's screen."
+      },
+      {
+        "step": 3,
+        "q": "Two messages leave the sender in order but take different routes. What keeps their arrival order?"
+      },
+      {
+        "step": 4,
+        "q": "Your gateway holds 2 million connections. It crashes. What does the user see, and what happens to in-flight messages?"
+      },
+      {
+        "step": 4,
+        "q": "The recipient is offline for six hours with bad mobile signal. How do the messages reach them?"
+      },
+      {
+        "step": 5,
+        "q": "A typing indicator drops on a congested network. Does anything break? What if a message drops instead?"
+      }
+    ]
+  }
 }

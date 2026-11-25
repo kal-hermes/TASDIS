@@ -1,0 +1,72 @@
+{
+  "gist": "A counting service that stands in front of a public API. Ten million requests per second at peak, and every request pays a five millisecond tax. The hard part is not counting: it is counting fast, at the edge, with rules that change every thirty seconds.",
+  "dimensions": {
+    "1": [
+      "Peak fleet traffic about 10 million requests per second",
+      "Limits are per API key and per endpoint, for example 1000 requests per minute",
+      "The limiter adds under 5 ms at p99",
+      "Small overshoot is fine but a client never exceeds 110 percent of its limit",
+      "A strong candidate asks for scale, latency, and the overshoot policy instead of inventing them."
+    ],
+    "2": [
+      "The limiter sits inline on the request path, closest to the API edge",
+      "The decision store is a fast in-memory counter, not a database round trip per request",
+      "Sketch the request path: key, endpoint, decision, then the real backend",
+      "A strong candidate draws the inline position and names the counter store before picking algorithms."
+    ],
+    "3": [
+      "Counters per key and endpoint: fixed window, sliding window, or token bucket",
+      "Token bucket absorbs bursts: 1000 per minute fills at about 17 per second",
+      "The 110 percent ceiling sizes the burst capacity of the bucket",
+      "Counting survives node restarts without resetting every client's budget",
+      "A strong candidate compares window algorithms against the overshoot tolerance."
+    ],
+    "4": [
+      "10 million decisions per second is the bottleneck, not the protected API",
+      "A central store takes a network round trip per request, so the decision lives at the edge node",
+      "Local counters with short sync windows trade a little overshoot for latency",
+      "Rule changes reach every node within 30 seconds, a push not a poll",
+      "A strong candidate measures the decision path in microseconds and syncs asynchronously."
+    ],
+    "5": [
+      "429 responses carry Retry-After and the remaining quota headers",
+      "Clients read quota headers instead of probing until rejection",
+      "Rule service, rollout, and rollback fit the 30 second budget",
+      "A strong candidate treats the response contract as part of the product."
+    ]
+  },
+  "anchors": {
+    "1": "Hearing the fleet scale: the candidate states ten million requests per second at peak and asks where the limiter runs",
+    "2": "Hearing the dimension: the candidate counts per key and per endpoint, not one global bucket",
+    "3": "Hearing the tax: the candidate budgets under five milliseconds at p99 for the decision",
+    "4": "Hearing the overshoot: the candidate accepts a small burst but holds a hard ceiling at 110 percent",
+    "5": "Hearing the contract: the candidate returns 429 with Retry-After and quota headers, and says clients should read them",
+    "6": "Hearing the rollout: the candidate pushes rule changes fleet wide inside thirty seconds"
+  },
+  "probes": [
+    {
+      "step": 1,
+      "q": "A client hits exactly its limit. How much over can it go before you hard reject?"
+    },
+    {
+      "step": 2,
+      "q": "Where does the decision live: at the edge node, or in a central store? What does the central store cost per request?"
+    },
+    {
+      "step": 3,
+      "q": "Fixed window, sliding window, or token bucket: which one absorbs a client that bursts 500 requests in two seconds?"
+    },
+    {
+      "step": 4,
+      "q": "You picked local counters for speed. The platform team changes a limit right now. When does every node enforce it?"
+    },
+    {
+      "step": 4,
+      "q": "Your store takes two milliseconds per lookup at ten million requests per second. Walk me through the request path."
+    },
+    {
+      "step": 5,
+      "q": "The client got a 429. What exactly is in the response, and what should it do with it?"
+    }
+  ]
+}

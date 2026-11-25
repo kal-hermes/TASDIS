@@ -1,0 +1,69 @@
+{
+  "gist": "A delivery pipeline that fans one event out to phones, inboxes, and SMS gateways, with a per-person rulebook. About 2,315 notifications per second on average and 20 thousand at peak, and the guarantees are timing, preferences, and never the same notification twice.",
+  "dimensions": {
+    "1": [
+      "About 200 million notifications per day, about 2,315 per second on average with a peak of 20 thousand per second",
+      "Channels: mobile push through APNs and FCM, plus email and SMS",
+      "Dispatch to the provider starts within 5 seconds of the event at p95",
+      "A strong candidate asks for volume, channel mix, and the dispatch budget instead of inventing them."
+    ],
+    "2": [
+      "An event bus receives triggers; a fan-out layer resolves audience and channels; provider adapters send",
+      "Each channel has its own adapter and rate limits: APNs, FCM, email, SMS",
+      "Sketch the path: event, dedupe, preference check, channel queue, provider",
+      "A strong candidate keeps channel specifics inside adapters."
+    ],
+    "3": [
+      "The 5 second budget makes the event to dispatch path short: a queue, a preference lookup, a provider call",
+      "Preferences and quiet hours are one keyed lookup per user, cached",
+      "Bulk campaigns and single events share the path but ride separate queues so a campaign cannot delay a single event",
+      "A strong candidate isolates campaign bursts from single events."
+    ],
+    "4": [
+      "Provider rate limits are the bottleneck, not the internal bus: 20 thousand per second must spread across provider quotas",
+      "Retries up to 5 with exponential backoff stretch delivery over about 31 seconds before a dead letter queue",
+      "The dedupe window: one event never notifies one user twice inside 24 hours, keyed by user plus event",
+      "A strong candidate treats provider quotas as capacity and the dedupe key as a correctness feature."
+    ],
+    "5": [
+      "Per channel and per category preferences plus quiet hours gate every send",
+      "The dead letter queue captures exhausted sends for inspection and replay",
+      "Delivery receipts and provider feedback close the loop per notification",
+      "A strong candidate makes preferences enforceable at dispatch time, not just at compose time."
+    ]
+  },
+  "anchors": {
+    "1": "Hearing the volume: the candidate states about 200 million per day with a 20 thousand per second peak",
+    "2": "Hearing the channels: the candidate names mobile push through APNs and FCM, email, and SMS",
+    "3": "Hearing the budget: the candidate dispatches to providers within 5 seconds at p95",
+    "4": "Hearing the rulebook: the candidate applies per channel and per category preferences with quiet hours",
+    "5": "Hearing the retry: the candidate retries up to 5 times with backoff, then dead letters",
+    "6": "Hearing the dedupe: the candidate blocks repeat notifications for one user and one event inside 24 hours"
+  },
+  "probes": [
+    {
+      "step": 1,
+      "q": "A campaign targets 80 million users at noon. What does your peak look like, and what absorbs it?"
+    },
+    {
+      "step": 2,
+      "q": "One event must reach a user's phone, inbox, and SMS. Walk me through what happens and where it can fan out."
+    },
+    {
+      "step": 3,
+      "q": "Dispatch must start within 5 seconds. What sits between the event and the provider call?"
+    },
+    {
+      "step": 4,
+      "q": "It is 2 AM for the user and a marketing event fires. Who decides that nothing is sent, and when?"
+    },
+    {
+      "step": 4,
+      "q": "FCM rejects a batch because of a rate limit. What happens to those notifications over the next minute?"
+    },
+    {
+      "step": 5,
+      "q": "A payment event retried and the user got two alerts. What key would have stopped that?"
+    }
+  ]
+}
