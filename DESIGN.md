@@ -478,6 +478,18 @@ syncs to the subtitle text. Persona timbre comes from the waveform choice, for e
 raspy distorted sawtooth for the Klingon and a smooth sine for the Vulcan.
 No audio files, no recorded speech, and it works in every locale.
 
+The shipped shape (M4). `js/personas.js` holds the registry. The prompt
+block replaces the plain interviewer voice block in the system prompt.
+`normal` is that plain voice, so one source holds both. The sprite is a
+16x16 pixel map per persona. `js/persona-art.js` draws it onto a canvas
+portrait with a two-frame idle bob. The backdrop is a persona class on
+the interview screen. The voice follows this section's recipe in
+`js/audio.js`. The schedule is deterministic in text and persona. Latin
+words contribute their vowel-group count with a floor of one. CJK text
+contributes one blip per character. `BlipVoice` takes the AudioContext
+as a parameter, so tests inject a fake. A mute toggle and the persona
+choice persist in preferences.
+
 ## 12. Internationalization (phase 2)
 
 Six UI locales: English, French, Japanese, Simplified Chinese (Putonghua),
