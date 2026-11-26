@@ -34,6 +34,7 @@ EXPECTED_EXPECTATION = {
     "mouth": {"atlas": True, "idleClosed": True, "talkCycle": True,
               "deterministic": True},
     "speech": {"present": True, "distinct": True},
+    "voiceStop": {"mutesTracked": True, "replaysAfterStop": True},
 }
 
 
@@ -48,9 +49,9 @@ def wait_port(port, timeout=10):
 
 
 UNITS = """
-  const personas = await import('./js/personas.js?v=37');
-  const audio = await import('./js/audio.js?v=37');
-  const assemble = await import('./js/prompts/assemble.js?v=37');
+  const personas = await import('./js/personas.js?v=38');
+  const audio = await import('./js/audio.js?v=38');
+  const assemble = await import('./js/prompts/assemble.js?v=38');
   const out = {};
 
   // ---- 1. the registry: five personas, every field present
@@ -136,7 +137,7 @@ UNITS = """
     out.prompt[id] = sys.includes(personas.PERSONAS[id].promptBlock);
   }
   // ---- 5. the 16-bit scenes: one animated painted scene per persona
-  const scenes = await import('./js/scenes.js?v=37');
+  const scenes = await import('./js/scenes.js?v=38');
   out.scenes = {};
   const ids = ['klingon', 'vulcan', 'pirate', 'cowboy', 'normal'];
   const record = () => {
@@ -188,7 +189,7 @@ UNITS = """
     scenes.getScene(id).skin) >= 30);
 
   // ---- 6. the mouth atlas: states, tags, and the pure frame picker
-  const mouth = await import('./js/mouth.js?v=37');
+  const mouth = await import('./js/mouth.js?v=38');
   out.mouth = {};
   out.mouth.atlas = ids.every((id, i) => {
     const p = mouth.MOUTH_META.personas[id];
@@ -208,11 +209,30 @@ UNITS = """
     mouth.pickMouthFrame(true, ms) === mouth.pickMouthFrame(true, ms));
 
   // ---- 7. the menu preview speech: one sample paragraph per persona
-  const reg = await import('./js/personas.js?v=37');
+  const reg = await import('./js/personas.js?v=38');
   const texts = ids.map((id) => reg.PERSONAS[id].sampleSpeech || '');
   out.speech = {};
   out.speech.present = texts.every((t) => t.length >= 40 && t.length <= 400);
   out.speech.distinct = new Set(texts).size === ids.length;
+
+  // ---- 8. BlipVoice.stop mutes the tracked blips and stays usable
+  const audioMod = await import('./js/audio.js?v=38');
+  let cancelled = 0;
+  const mkOsc = () => ({ connect() {}, start() {}, stop() {},
+    frequency: { setValueAtTime() {} }, onended: null });
+  const fakeCtx = { currentTime: 0, destination: {},
+    createOscillator: mkOsc,
+    createGain: () => ({ connect() {}, gain: {
+      setValueAtTime() {}, exponentialRampToValueAtTime() {},
+      cancelScheduledValues() { cancelled += 1; } } }) };
+  const p = { timbre: { wave: 'sine', minHz: 140, maxHz: 300 } };
+  const voice = new audioMod.BlipVoice(fakeCtx, p, {});
+  const made = voice.play([{ ms: 60, hz: 200 }, { ms: 60, hz: 220 }]);
+  voice.stop();
+  const replayed = voice.play([{ ms: 60, hz: 210 }]);
+  out.voiceStop = {};
+  out.voiceStop.mutesTracked = made === 2 && cancelled >= 2;
+  out.voiceStop.replaysAfterStop = replayed === 1;
   return out;
 """
 

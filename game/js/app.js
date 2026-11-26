@@ -1,13 +1,13 @@
 // TADSDI app.js: entry point and screen routing.
 
 import { initSettings, howToAtStart, setHowToAtStart, loadSettings,
-  saveSettings } from './settings.js?v=37';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=37';
-import { initExport } from './export.js?v=37';
-import { loadProblems } from './problems.js?v=37';
-import { PERSONA_IDS, PERSONAS } from './personas.js?v=37';
-import { applyPersona, startSceneLoop, stopSceneLoop, setTalking } from './persona-art.js?v=37';
-import { BlipVoice, setBlipVoice } from './audio.js?v=37';
+  saveSettings } from './settings.js?v=38';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=38';
+import { initExport } from './export.js?v=38';
+import { loadProblems } from './problems.js?v=38';
+import { PERSONA_IDS, PERSONAS } from './personas.js?v=38';
+import { applyPersona, startSceneLoop, stopSceneLoop, setTalking } from './persona-art.js?v=38';
+import { scheduleBlips, BlipVoice, setBlipVoice } from './audio.js?v=38';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -161,23 +161,42 @@ function onVoiceMuteClick() {
 // canvas and streams the persona's sample speech, so the candidate sees
 // the avatar, the background, and the way the persona talks before
 // starting. The preview drives the same talking flag as the interview
-// streams, so the mouth overlay flaps here too. It is silent: no
-// AudioContext exists on the menu.
+// streams, so the mouth overlay flaps here too. The menu is silent
+// until the Preview voice button is clicked: that replay carries the
+// persona's blips through a context created on the click gesture.
 
 let previewTimer = null;
+// The preview is silent until the Preview voice button is clicked: an
+// AudioContext may only start on a user gesture, and the button click is
+// one. The context is created once and reused for every replay.
+let previewCtx = null;
+let previewVoice = null;
 
 function stopPersonaPreview() {
   if (previewTimer) {
     clearInterval(previewTimer);
     previewTimer = null;
   }
+  if (previewVoice) {
+    previewVoice.stop();
+    previewVoice = null;
+  }
   setTalking(false);
 }
 
-function restartPersonaPreview() {
+function previewAudioVoice(personaId) {
+  const Ctx = window.AudioContext;
+  if (!Ctx) return null;
+  if (!previewCtx) previewCtx = new Ctx();
+  if (previewCtx.state === 'suspended') previewCtx.resume();
+  return new BlipVoice(previewCtx, PERSONAS[personaId], { muted: false });
+}
+
+function restartPersonaPreview(withAudio = false) {
   stopPersonaPreview();
   const personaId = el('persona-select').value || 'normal';
   startSceneLoop(el('persona-preview-scene'), personaId);
+  previewVoice = withAudio ? previewAudioVoice(personaId) : null;
   const speechEl = el('persona-preview-speech');
   const words = PERSONAS[personaId].sampleSpeech.split(' ');
   let index = 0;
@@ -188,7 +207,11 @@ function restartPersonaPreview() {
       stopPersonaPreview();
       return;
     }
-    speechEl.textContent += (index > 0 ? ' ' : '') + words[index];
+    const word = words[index];
+    speechEl.textContent += (index > 0 ? ' ' : '') + word;
+    if (previewVoice) {
+      previewVoice.play(scheduleBlips(`${word} `, PERSONAS[personaId]));
+    }
     index += 1;
     if (index >= words.length) stopPersonaPreview();
   }, 70);
@@ -291,6 +314,8 @@ export function initApp() {
   syncProactive();
   initPersonaSelect();
   initVoiceMute();
+  el('voice-preview-btn').addEventListener('click',
+    () => restartPersonaPreview(true));
   // The boot-time showScreen('menu') dispatch fired before the screen
   // listeners registered, so the preview starts here explicitly.
   restartPersonaPreview();

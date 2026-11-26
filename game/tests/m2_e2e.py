@@ -89,7 +89,7 @@ def main():
             for i in range(6):
                 d.send("Proceeding.")
             page.evaluate("""async () => {
-              const providers = await import('./js/providers.js?v=37');
+              const providers = await import('./js/providers.js?v=38');
               providers.setMockGraderQueue(['grade_bad']);
             }""")
             page.click("#end-interview-btn")

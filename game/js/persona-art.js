@@ -9,9 +9,9 @@
 // The loop follows the interview screen: app.js stops it on every other
 // screen, so no timer outlives it.
 
-import { getPersona } from './personas.js?v=37';
-import { getScene, SCENE_W, SCENE_H, CYCLE, bustBobOffset } from './scenes.js?v=37';
-import { loadMouthSheet, pickMouthFrame, drawMouth } from './mouth.js?v=37';
+import { getPersona } from './personas.js?v=38';
+import { getScene, SCENE_W, SCENE_H, CYCLE, bustBobOffset } from './scenes.js?v=38';
+import { loadMouthSheet, pickMouthFrame, drawMouth } from './mouth.js?v=38';
 
 let frameTimer = null;
 let frame = 0;

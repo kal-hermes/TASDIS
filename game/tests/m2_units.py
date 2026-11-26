@@ -50,10 +50,10 @@ def main():
             page.goto(f"{BASE}/index.html", wait_until="networkidle")
 
             result = page.evaluate("""async () => {
-              const grader = await import('./js/grader.js?v=37');
-              const prompts = await import('./js/prompts/grader-prompt.js?v=37');
-              const providers = await import('./js/providers.js?v=37');
-              const state = await import('./js/state.js?v=37');
+              const grader = await import('./js/grader.js?v=38');
+              const prompts = await import('./js/prompts/grader-prompt.js?v=38');
+              const providers = await import('./js/providers.js?v=38');
+              const state = await import('./js/state.js?v=38');
               const out = {};
 
               // parse: plain, fenced, preamble junk (full valid 8-row grade)

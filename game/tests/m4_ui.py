@@ -54,7 +54,8 @@ FAKE_AUDIO = """
     resume() { return Promise.resolve(); }
     createOscillator() { return new FakeOsc(window.__audioLog); }
     createGain() { return { gain: {
-      setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }; }
+      setValueAtTime() {}, exponentialRampToValueAtTime() {},
+      cancelScheduledValues() {} }, connect() {} }; }
   }
   window.AudioContext = FakeAudioContext;
 """
@@ -119,7 +120,7 @@ def main():
             sel = page.evaluate(
                 "() => document.getElementById('persona-select').value")
             full = page.evaluate(
-                "id => import('./js/personas.js?v=37')"
+                "id => import('./js/personas.js?v=38')"
                 ".then((m) => m.PERSONAS[id].sampleSpeech)", sel)
             page.wait_for_function(
                 "t => document.getElementById('persona-preview-speech')"
@@ -133,7 +134,7 @@ def main():
             expect("preview mouth flaps while the sample streams",
                    mid_state.get("frame", 0) != 0, mid_state)
             vulcan_text = page.evaluate(
-                "id => import('./js/personas.js?v=37')"
+                "id => import('./js/personas.js?v=38')"
                 ".then((m) => m.PERSONAS[id].sampleSpeech)", "vulcan")
             page.wait_for_function(
                 "t => document.getElementById('persona-preview-speech')"
@@ -142,6 +143,35 @@ def main():
             expect("preview mouth closed after the sample",
                    after_state.get("talking") is False
                    and after_state.get("frame") == 0, after_state)
+
+            # ---- A1. the voice preview button: the menu is silent until
+            # it is clicked, then the sample replays with audible blips in
+            # the selected persona's timbre
+            expect("no blips before the preview button",
+                   page.evaluate("() => window.__audioLog.started") == 0,
+                   "blips played on the menu before any click")
+            page.click("#voice-preview-btn")
+            page.wait_for_function("() => window.__audioLog.started > 0",
+                                   timeout=10000)
+            early_len = page.evaluate(
+                "() => document.getElementById('persona-preview-speech')"
+                ".textContent.length")
+            expect("voice replay restarts the stream", early_len < 60,
+                   early_len)
+            freqs = page.evaluate("() => window.__audioLog.freqs")
+            expect("replay blips sit in the persona band",
+                   len(freqs) > 0 and all(160 <= f <= 320 for f in freqs),
+                   freqs)
+            sines = page.evaluate(
+                "() => window.__audioLog.waves.filter((w) => w === 'sine').length")
+            expect("replay blips use the persona waveform", sines > 0, sines)
+            page.wait_for_function(
+                "t => document.getElementById('persona-preview-speech')"
+                ".textContent === t", arg=vulcan_text, timeout=15000)
+            replay_state = page.evaluate("() => window.__mouth")
+            expect("mouth closed after the voice replay",
+                   replay_state.get("talking") is False
+                   and replay_state.get("frame") == 0, replay_state)
 
             # ---- A. the picker: five options, default normal, persists
             page.select_option("#persona-select", "klingon")
@@ -266,7 +296,11 @@ def main():
                 "() => getComputedStyle(document.getElementById('send-btn')).boxShadow")
             expect("hard shadow", "0px 0px 0px" in shadow or "px 0px 0px" in shadow, shadow)
 
-            # ---- E. the voice: one streamed turn drives the fake context
+            # ---- E. the voice: one streamed turn drives the fake context.
+            # The preview button's blips from A1 are already in the log, so
+            # assert only the waves this turn adds.
+            wave_baseline = page.evaluate(
+                "() => window.__audioLog.waves.length")
             page.evaluate("() => { window.__audioLog.started = 0; }")
             page.fill("#candidate-input", "I will start with the users.")
             page.click("#send-btn")
@@ -274,8 +308,10 @@ def main():
             page.wait_for_function(
                 "() => window.__audioLog.started > 0", timeout=20000)
             waves = page.evaluate("() => window.__audioLog.waves")
+            turn_waves = waves[wave_baseline:]
             expect("blip wave is klingon sawtooth",
-                   waves and all(w == "sawtooth" for w in waves), waves[:4])
+                   turn_waves and all(w == "sawtooth" for w in turn_waves),
+                   turn_waves[:4])
 
             # the mute toggle stops creation and persists
             page.click("#voice-mute")

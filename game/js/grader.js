@@ -3,9 +3,9 @@
 // retries exactly once. The score derives from the row count in game code,
 // never from the model.
 
-import { complete } from './providers.js?v=37';
-import { buildGraderMessages, DIAGNOSTIC_ROWS } from './prompts/grader-prompt.js?v=37';
-import { extractJsonObject } from './json-reply.js?v=37';
+import { complete } from './providers.js?v=38';
+import { buildGraderMessages, DIAGNOSTIC_ROWS } from './prompts/grader-prompt.js?v=38';
+import { extractJsonObject } from './json-reply.js?v=38';
 
 const ROW_NAMES = DIAGNOSTIC_ROWS.map((r) => r.name);
 

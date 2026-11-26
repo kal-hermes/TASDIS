@@ -105,6 +105,10 @@ button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shad
   font-size: 0.875rem;
 }
 
+#voice-preview-btn {
+  margin-top: 0.5rem;
+}
+
 #persona-name {
   position: absolute;
   left: 0.5rem;

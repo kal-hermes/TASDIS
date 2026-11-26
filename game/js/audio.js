@@ -58,6 +58,8 @@ export class BlipVoice {
     this.persona = persona;
     this.muted = muted;
     this.cursor = 0;
+    // Blips in flight, so a canceled preview can mute them at once.
+    this.active = [];
   }
 
   // Returns the number of oscillators created. Blips are spaced on the
@@ -78,10 +80,27 @@ export class BlipVoice {
       gain.connect(this.ctx.destination);
       osc.start(t);
       osc.stop(t + blip.ms / 1000 + 0.02);
+      const entry = { osc, gain };
+      this.active.push(entry);
+      osc.onended = () => {
+        const i = this.active.indexOf(entry);
+        if (i >= 0) this.active.splice(i, 1);
+      };
       t += blip.ms / 1000 + 0.03;
       made += 1;
     }
     return made;
+  }
+
+  // Mutes every blip in flight at once: a scheduled oscillator stop cannot
+  // be recanceled, so cancel the gain automation and pin the gain to zero.
+  // The oscillators still run to their scheduled stops, inaudible.
+  stop() {
+    const t = this.ctx.currentTime;
+    for (const { gain } of this.active.splice(0)) {
+      gain.gain.cancelScheduledValues(t);
+      gain.gain.setValueAtTime(0.0001, t);
+    }
   }
 }
 
