@@ -272,7 +272,7 @@ function mapColors(colors) {
 /* ---- the scenes -------------------------------------------------------- */
 
 function paintBust(c, personaId, frame, colors, px = 3, ox = 12, oy = 66) {
-  const bob = (Math.floor(frame / 8) % 2) * 2;
+  const bob = bustBobOffset(frame);
   const rows = BUSTS[personaId];
   const map = mapColors(colors);
   for (let y = 0; y < rows.length; y += 1) {
@@ -603,6 +603,15 @@ const SCENES = {
 };
 
 const IDS = Object.keys(SCENES);
+
+// The bust grids and the bob offset are shared with the mouth patch
+// blit (persona-art.js) and the Aseprite authoring generator: the patch
+// must cover and move with exactly the cells the bust paints.
+export { BUSTS };
+
+export function bustBobOffset(frame) {
+  return (Math.floor(frame / 8) % 2) * 2;
+}
 
 export function getScene(personaId) {
   const scene = SCENES[personaId];

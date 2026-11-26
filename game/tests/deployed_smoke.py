@@ -94,9 +94,22 @@ def main():
         assert d.stored_session()["ledger"]["revealedGuidance"] == [2], \
             "a hint that reveals guidance did not reach the ledger"
         assert "[[" not in page.locator("#chat-log").inner_text()
-        d.send("Estimate first.\n$$QPS = 1160$$")
+        before = page.evaluate(
+            "() => document.querySelectorAll('#chat-log .chat-message.interviewer').length")
+        page.fill("#candidate-input", "Estimate first.\n$$QPS = 1160$$")
+        page.click("#send-btn")
+        page.wait_for_selector("#interview-busy", state="visible")
+        # The mouth must flap while the reply streams (the Aseprite sheet).
+        mouth1 = page.evaluate(
+            "() => document.getElementById('persona-scene')"
+            ".getContext('2d').getImageData(42, 90, 40, 28).data.join(',')")
+        page.wait_for_timeout(120)
+        mouth2 = page.evaluate(
+            "() => document.getElementById('persona-scene')"
+            ".getContext('2d').getImageData(42, 90, 40, 28).data.join(',')")
+        assert mouth1 != mouth2, "the mouth did not move while streaming"
+        d.wait_reply(before)
         page.wait_for_selector("#chat-log .chat-message.artifact .katex")
-        d.wait_reply()
         d.submit_mermaid()
         page.wait_for_selector("#chat-log .chat-message.artifact svg")
         for _ in range(5):

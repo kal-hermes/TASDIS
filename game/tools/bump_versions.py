@@ -21,7 +21,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 # The path class also allows a template hole such as `${slug}`, so a URL that
 # a module builds from parts is versioned like any other.
-URL_RE = re.compile(r"(?P<path>[A-Za-z0-9_./\-{}$*]+\.(?:js|css|json))\?v=(?P<ver>\d+)")
+URL_RE = re.compile(r"(?P<path>[A-Za-z0-9_./\-{}$*]+\.(?:js|css|json|png))\?v=(?P<ver>\d+)")
 
 
 def target_files():

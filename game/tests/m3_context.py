@@ -34,12 +34,12 @@ def set_text_role(page, **fields):
 
 
 UNITS = """async (base) => {
-  const state = await import(base + 'js/state.js?v=35');
-  const context = await import(base + 'js/context.js?v=35');
-  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=35');
-  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=35');
-  const providers = await import(base + 'js/providers.js?v=35');
-  const settings = await import(base + 'js/settings.js?v=35');
+  const state = await import(base + 'js/state.js?v=36');
+  const context = await import(base + 'js/context.js?v=36');
+  const sum = await import(base + 'js/prompts/summarize-prompt.js?v=36');
+  const prompts = await import(base + 'js/prompts/grader-prompt.js?v=36');
+  const providers = await import(base + 'js/providers.js?v=36');
+  const settings = await import(base + 'js/settings.js?v=36');
   const out = {};
   const CTX = 16000;  // tokens: a mid-size window that a long transcript outgrows
   const problem = { id: 'p', title: 'P', vague_prompt: 'Design X.',
@@ -178,7 +178,7 @@ UNITS = """async (base) => {
 
   // 12. the probe budget anchor rides the head only when it applies
   try {
-  const pack = await (await fetch(base + 'js/problems/url-shortener.json?v=35')).json();
+  const pack = await (await fetch(base + 'js/problems/url-shortener.json?v=36')).json();
   const probeSession = (helpMode, cap) => {
     const s = state.newSession(pack, { helpMode });
     s.maxProbesPerStep = cap;
@@ -301,7 +301,7 @@ def main():
             assert any(e["status"] == "summarized" for e in s["ledger"]["estimates"]), s["ledger"]
             assert page.locator("#engine-status").inner_text() == "", "status shows a failure"
             assembly = page.evaluate("""async ([base, session, tokens]) => {
-              const context = await import(base + 'js/context.js?v=35');
+              const context = await import(base + 'js/context.js?v=36');
               return context.assembleContext(session, { contextTokens: tokens })
                 .map((m) => m.content);
             }""", [MODULES, s, SMALL_CONTEXT])
@@ -316,7 +316,7 @@ def main():
             d.start_session(help_mode="learning")
             set_text_role(page, contextTokens=SMALL_CONTEXT)
             page.evaluate("""async ([base, n]) => {
-              const providers = await import(base + 'js/providers.js?v=35');
+              const providers = await import(base + 'js/providers.js?v=36');
               providers.setMockFaultQueue(Array.from({ length: n }, () => (
                 { kind: 'http', status: 500, purpose: 'summarize' })));
             }""", [MODULES, 5])

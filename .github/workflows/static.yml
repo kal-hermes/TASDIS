@@ -14,6 +14,7 @@ on:
       - game/index.html
       - game/css/**
       - game/fonts/**
+      - game/img/**
       - game/js/**
       - .github/workflows/static.yml
   workflow_dispatch:
@@ -43,7 +44,7 @@ jobs:
       - name: Stage the game (runtime files only)
         run: |
           mkdir _site
-          cp --recursive game/index.html game/css game/fonts game/js _site/
+          cp --recursive game/index.html game/css game/fonts game/img game/js _site/
           test -f _site/index.html
           test -f _site/css/main.css
           test -f _site/js/app.js
@@ -55,6 +56,8 @@ jobs:
           test -f _site/js/vendor/katex.min.css
           test -f _site/js/vendor/mermaid.min.js
           test -f _site/js/vendor/fonts/KaTeX_Main-Regular.woff2
+          test -f _site/img/mouth-states.png
+          test -f _site/img/mouth-states.json
 
       # Pages must be on for the repository before this step can run: in the
       # repository settings, under Pages, the source is "GitHub Actions".

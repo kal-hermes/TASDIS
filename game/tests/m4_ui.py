@@ -249,6 +249,41 @@ def main():
             started = page.evaluate("() => window.__audioLog.started")
             expect("muted turn creates no blips", started == 0, started)
 
+            # ---- E2. the mouth: flaps while streaming, still while idle.
+            # The mouth is visual, so it flaps even with the voice muted.
+            def canvas_region(x, y, w, h):
+                return page.evaluate(
+                    "([x, y, w, h]) => document.getElementById('persona-scene')"
+                    ".getContext('2d').getImageData(x, y, w, h).data.join(',')",
+                    [x, y, w, h])
+
+            page.evaluate("() => { window.__audioLog.started = 0; }")
+            page.fill("#candidate-input", "Then the read path.")
+            page.click("#send-btn")
+            page.wait_for_selector("#interview-busy", state="visible",
+                                   timeout=20000)
+            flap1 = canvas_region(42, 90, 40, 28)
+            page.wait_for_timeout(120)
+            flap2 = canvas_region(42, 90, 40, 28)
+            expect("mouth flaps while streaming", flap1 != flap2,
+                   "mouth region static during the stream")
+            busy_state = page.evaluate("() => window.__mouth")
+            expect("talking flag on during the stream",
+                   busy_state and busy_state.get("talking") is True
+                   and busy_state.get("frame", 0) != 0, busy_state)
+            page.wait_for_selector("#interview-busy", state="hidden",
+                                   timeout=20000)
+            page.wait_for_timeout(400)
+            idle_state = page.evaluate("() => window.__mouth")
+            lamp1 = canvas_region(46, 124, 60, 12)
+            page.wait_for_timeout(800)
+            lamp2 = canvas_region(46, 124, 60, 12)
+            expect("mouth closed and idle after the stream",
+                   idle_state and idle_state.get("talking") is False
+                   and idle_state.get("frame") == 0, idle_state)
+            expect("background keeps moving while idle", lamp1 != lamp2,
+                   "lamp region static while idle")
+
             # ---- F. switching persona changes art and palette
             page.click("#screen-nav button[data-nav='menu']")
             page.evaluate("key => localStorage.removeItem(key)",

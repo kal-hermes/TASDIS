@@ -31,6 +31,8 @@ EXPECTED_EXPECTATION = {
                "klingonFlash": True, "vulcanSoup": True,
                "cowboyPuff": True, "pirateFlash": True,
                "officeStapler": True, "bustSkin": True},
+    "mouth": {"atlas": True, "idleClosed": True, "talkCycle": True,
+              "deterministic": True},
 }
 
 
@@ -45,9 +47,9 @@ def wait_port(port, timeout=10):
 
 
 UNITS = """
-  const personas = await import('./js/personas.js?v=35');
-  const audio = await import('./js/audio.js?v=35');
-  const assemble = await import('./js/prompts/assemble.js?v=35');
+  const personas = await import('./js/personas.js?v=36');
+  const audio = await import('./js/audio.js?v=36');
+  const assemble = await import('./js/prompts/assemble.js?v=36');
   const out = {};
 
   // ---- 1. the registry: five personas, every field present
@@ -133,7 +135,7 @@ UNITS = """
     out.prompt[id] = sys.includes(personas.PERSONAS[id].promptBlock);
   }
   // ---- 5. the 16-bit scenes: one animated painted scene per persona
-  const scenes = await import('./js/scenes.js?v=35');
+  const scenes = await import('./js/scenes.js?v=36');
   out.scenes = {};
   const ids = ['klingon', 'vulcan', 'pirate', 'cowboy', 'normal'];
   const record = () => {
@@ -183,6 +185,26 @@ UNITS = """
   out.scenes.officeStapler = hasColor(zero.normal, '#c81e1e');
   out.scenes.bustSkin = ids.every((id) => area(zero[id],
     scenes.getScene(id).skin) >= 30);
+
+  // ---- 6. the mouth atlas: states, tags, and the pure frame picker
+  const mouth = await import('./js/mouth.js?v=36');
+  out.mouth = {};
+  out.mouth.atlas = ids.every((id, i) => {
+    const p = mouth.MOUTH_META.personas[id];
+    return p && p.base === i * 3
+      && mouth.MOUTH_META.frameW === 10
+      && mouth.MOUTH_META.frameH === 7
+      && mouth.MOUTH_META.talkMs === 90;
+  });
+  out.mouth.idleClosed = [0, 45, 500, 99999].every((ms) =>
+    mouth.pickMouthFrame(false, ms) === 0);
+  out.mouth.talkCycle = mouth.pickMouthFrame(true, 0) === 1
+    && mouth.pickMouthFrame(true, 89) === 1
+    && mouth.pickMouthFrame(true, 90) === 2
+    && mouth.pickMouthFrame(true, 179) === 2
+    && mouth.pickMouthFrame(true, 180) === 1;
+  out.mouth.deterministic = [0, 95, 200, 777].every((ms) =>
+    mouth.pickMouthFrame(true, ms) === mouth.pickMouthFrame(true, ms));
   return out;
 """
 

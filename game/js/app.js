@@ -1,13 +1,13 @@
 // TADSDI app.js: entry point and screen routing.
 
 import { initSettings, howToAtStart, setHowToAtStart, loadSettings,
-  saveSettings } from './settings.js?v=35';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=35';
-import { initExport } from './export.js?v=35';
-import { loadProblems } from './problems.js?v=35';
-import { PERSONA_IDS, PERSONAS } from './personas.js?v=35';
-import { applyPersona, startSceneLoop, stopSceneLoop } from './persona-art.js?v=35';
-import { BlipVoice, setBlipVoice } from './audio.js?v=35';
+  saveSettings } from './settings.js?v=36';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=36';
+import { initExport } from './export.js?v=36';
+import { loadProblems } from './problems.js?v=36';
+import { PERSONA_IDS, PERSONAS } from './personas.js?v=36';
+import { applyPersona, startSceneLoop, stopSceneLoop } from './persona-art.js?v=36';
+import { BlipVoice, setBlipVoice } from './audio.js?v=36';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 

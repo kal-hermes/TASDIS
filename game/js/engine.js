@@ -8,16 +8,17 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=35';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=35';
-import { feedBlips } from './audio.js?v=35';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=35';
-import { assembleContext, compressIfNeeded } from './context.js?v=35';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=35';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=35';
-import { parseTurn } from './turn-parse.js?v=35';
-import { renderLatex } from './render-latex.js?v=35';
-import { renderMermaid } from './render-mermaid.js?v=35';
+} from './state.js?v=36';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=36';
+import { feedBlips } from './audio.js?v=36';
+import { setTalking } from './persona-art.js?v=36';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=36';
+import { assembleContext, compressIfNeeded } from './context.js?v=36';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=36';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=36';
+import { parseTurn } from './turn-parse.js?v=36';
+import { renderLatex } from './render-latex.js?v=36';
+import { renderMermaid } from './render-mermaid.js?v=36';
 
 let session = null;
 let busy = false;
@@ -301,6 +302,7 @@ export async function runLlmTurn({ purpose, helpRequest }) {
     } else {
       messages = await interviewerContext();
     }
+    setTalking(true);
     const raw = await completeStream('text', messages, (chunk) => {
       streamEl.textContent += chunk;
       feedBlips(chunk);
@@ -326,6 +328,7 @@ export async function runLlmTurn({ purpose, helpRequest }) {
         runLlmTurn({ purpose, helpRequest }));
     }
   } finally {
+    setTalking(false);
     busy = false;
     session.clockPaused = false;
     saveSession(session);
@@ -419,6 +422,7 @@ async function wrapup(timeUpNote) {
   renderControls();
   if (timeUpNote) chatMessageEl('system', timeUpNote);
   const streamEl = streamingEl();
+  setTalking(true);
   try {
     const raw = await completeStream('text', await interviewerContext(), (chunk) => {
       streamEl.textContent += chunk;
@@ -432,6 +436,7 @@ async function wrapup(timeUpNote) {
     streamEl.remove();
     addMessage(session, 'system', `Wrap-up skipped: ${err.message}`);
   }
+  setTalking(false);
   session.state = 'GRADING';
   session.ended = true;
   saveSession(session);

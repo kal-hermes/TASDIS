@@ -114,7 +114,7 @@ def main():
 
             # ---- units ------------------------------------------------
             out = page.evaluate("""async (base) => {
-              const providers = await import(base + 'js/providers.js?v=35');
+              const providers = await import(base + 'js/providers.js?v=36');
               const E = providers.ProviderErrors;
               const d = (err, name) => providers.describeProviderError(err, name).message;
               const out = {};
@@ -208,7 +208,7 @@ def main():
                 before = len(d.stored_session()["transcript"])
                 page.evaluate(
                     """async ([base, fault]) => {
-                      const providers = await import(base + 'js/providers.js?v=35');
+                      const providers = await import(base + 'js/providers.js?v=36');
                       providers.setMockFaultQueue([fault]);
                     }""", [MODULES, fault])
                 page.fill("#candidate-input", "Going fine.")
@@ -234,7 +234,7 @@ def main():
             d.open_menu()
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=35');
+                  const providers = await import(base + 'js/providers.js?v=36');
                   providers.setMockFaultQueue(['network']);
                 }""", MODULES)
             page.click("#start-interview")
@@ -260,7 +260,7 @@ def main():
             assert page.locator("#end-interview-btn").is_visible()
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=35');
+                  const providers = await import(base + 'js/providers.js?v=36');
                   providers.setMockFaultQueue(['http:500']);
                 }""", MODULES)
             page.click("#end-interview-btn")
@@ -278,7 +278,7 @@ def main():
                 d.send("Proceeding.")
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=35');
+                  const providers = await import(base + 'js/providers.js?v=36');
                   providers.setMockGraderQueue(['grade_bad', 'grade_bad']);
                 }""", MODULES)
             page.click("#end-interview-btn")
@@ -316,7 +316,7 @@ def main():
                           model="fake-model", apiKey="k")
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=35');
+                  const providers = await import(base + 'js/providers.js?v=36');
                   providers.setProviderTimeouts({ requestMs: 1500, idleMs: 1500 });
                 }""", MODULES)
             page.click("#start-interview")
@@ -392,7 +392,7 @@ def main():
             # timeouts go back on (the stalled-stream section relies on them).
             page.evaluate(
                 """async (base) => {
-                  const providers = await import(base + 'js/providers.js?v=35');
+                  const providers = await import(base + 'js/providers.js?v=36');
                   providers.setProviderTimeouts({ requestMs: 1500, idleMs: 1500 });
                 }""", MODULES)
             captured.clear()

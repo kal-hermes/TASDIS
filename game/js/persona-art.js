@@ -1,15 +1,27 @@
 // Draws the persona interview scene onto the scene canvas and applies the
 // persona backdrop class and palette variables to the interview screen.
 // The canvas is a 256x192 logical pixel 4:3 scene, scaled up with
-// image-rendering: pixelated in CSS. The scene repaints at 8 frames per
-// second; the loop follows the interview screen (app.js stops it on every
-// other screen).
+// image-rendering: pixelated in CSS. Three independent timelines run
+// here: the background painters redraw on the scene tick, the body idle
+// bob is part of the painted bust on the same fixed period, and the
+// mouth overlay blits Aseprite-authored states only while the
+// interviewer's speech streams (engine.js flips the talking flag).
+// The loop follows the interview screen: app.js stops it on every other
+// screen, so no timer outlives it.
 
-import { getPersona } from './personas.js?v=35';
-import { getScene, SCENE_W, SCENE_H, CYCLE } from './scenes.js?v=35';
+import { getPersona } from './personas.js?v=36';
+import { getScene, SCENE_W, SCENE_H, CYCLE, bustBobOffset } from './scenes.js?v=36';
+import { loadMouthSheet, pickMouthFrame, drawMouth } from './mouth.js?v=36';
 
 let frameTimer = null;
 let frame = 0;
+let talking = false;
+let mouthElapsed = 0;
+
+// The patch origin matches scenes.js paintBust: bust at (12, 66), cells
+// at 3x, mouth patch window at bust-local (11, 9).
+const MOUTH_X = 12 + 11 * 3;
+const MOUTH_Y = 66 + 9 * 3;
 
 export function drawScene(canvas, personaId, frameIndex = 0) {
   const scene = getScene(personaId);
@@ -30,14 +42,41 @@ export function applyPersona(screenEl, personaId) {
   return persona;
 }
 
+// The engine sets the flag when an interviewer stream starts and clears
+// it in its finally block, next to the existing blip feed.
+export function setTalking(value) {
+  talking = value === true;
+  if (!talking) mouthElapsed = 0;
+}
+
 export function startSceneLoop(canvas, personaId, fps = 8) {
   stopSceneLoop();
   frame = 0;
-  drawScene(canvas, personaId, frame);
+  talking = false;
+  mouthElapsed = 0;
+  let sheet = null;
+  loadMouthSheet().then((img) => {
+    sheet = img;
+    if (frameTimer) tickScene(canvas, personaId, sheet);
+  }).catch(() => {});
+  const tickMs = Math.round(1000 / fps);
+  const drawTick = () => tickScene(canvas, personaId, sheet);
+  drawTick();
   frameTimer = setInterval(() => {
     frame = (frame + 1) % CYCLE;
-    drawScene(canvas, personaId, frame);
-  }, Math.round(1000 / fps));
+    if (talking) mouthElapsed += tickMs;
+    drawTick();
+  }, tickMs);
+}
+
+function tickScene(canvas, personaId, sheet) {
+  drawScene(canvas, personaId, frame);
+  const state = pickMouthFrame(talking, mouthElapsed);
+  if (sheet && state > 0) {
+    drawMouth(canvas.getContext('2d'), sheet, personaId, state,
+      MOUTH_X, MOUTH_Y + bustBobOffset(frame));
+  }
+  window.__mouth = { talking, frame: state };
 }
 
 export function stopSceneLoop() {
