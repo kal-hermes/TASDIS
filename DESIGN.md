@@ -509,9 +509,17 @@ at 90 milliseconds. When an interviewer stream starts, the engine sets
 the talking flag. The flag clears in the finally block of the stream,
 next to the blip feed. The mouth overlay blits at 3x over the painted
 bust and moves with its idle bob. The background and the bob never
-depend on the speech state. The Aseprite sources live outside the
-repository. `game/art/manifest.json` records their host paths. The
-versioned artifacts are the exported sheet and the atlas JSON.
+the speech state. The Aseprite sources live outside the repository.
+`game/art/manifest.json` records their host paths. The versioned
+artifacts are the exported sheet and the atlas JSON.
+
+The menu shows a persona preview. The same scene loop runs on a small
+canvas. It paints the selected persona's background and avatar. One
+sample paragraph per persona streams word by word beside the canvas.
+The preview drives the same talking flag as the interview streams, so
+the mouth flaps there too. It is silent: no AudioContext exists on the
+menu. The preview stops on any screen change, so no timer outlives the
+menu.
 
 ## 12. Internationalization (phase 2)
 
