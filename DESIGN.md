@@ -500,6 +500,19 @@ contributes one blip per character. `BlipVoice` takes the AudioContext
 as a parameter, so tests inject a fake. A mute toggle and the persona
 choice persist in preferences.
 
+The mouth is separate art. Each persona has three states: closed, half,
+and open. The states are authored in Aseprite through the pixel-plugin
+skills. They ship as one spritesheet with an atlas in `img/`. A pure
+picker in `js/mouth.js` selects the state from the talking flag and the
+elapsed time. Idle shows the closed state. Talking cycles half and open
+at 90 milliseconds. When an interviewer stream starts, the engine sets
+the talking flag. The flag clears in the finally block of the stream,
+next to the blip feed. The mouth overlay blits at 3x over the painted
+bust and moves with its idle bob. The background and the bob never
+depend on the speech state. The Aseprite sources live outside the
+repository. `game/art/manifest.json` records their host paths. The
+versioned artifacts are the exported sheet and the atlas JSON.
+
 ## 12. Internationalization (phase 2)
 
 Six UI locales: English, French, Japanese, Simplified Chinese (Putonghua),
