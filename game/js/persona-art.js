@@ -9,9 +9,9 @@
 // The loop follows the interview screen: app.js stops it on every other
 // screen, so no timer outlives it.
 
-import { getPersona } from './personas.js?v=36';
-import { getScene, SCENE_W, SCENE_H, CYCLE, bustBobOffset } from './scenes.js?v=36';
-import { loadMouthSheet, pickMouthFrame, drawMouth } from './mouth.js?v=36';
+import { getPersona } from './personas.js?v=37';
+import { getScene, SCENE_W, SCENE_H, CYCLE, bustBobOffset } from './scenes.js?v=37';
+import { loadMouthSheet, pickMouthFrame, drawMouth } from './mouth.js?v=37';
 
 let frameTimer = null;
 let frame = 0;
@@ -43,10 +43,13 @@ export function applyPersona(screenEl, personaId) {
 }
 
 // The engine sets the flag when an interviewer stream starts and clears
-// it in its finally block, next to the existing blip feed.
+// it in its finally block, next to the existing blip feed. The hook
+// updates here too, so a reader between scene ticks sees the transition
+// instead of the previous tick's state.
 export function setTalking(value) {
   talking = value === true;
   if (!talking) mouthElapsed = 0;
+  window.__mouth = { talking, frame: pickMouthFrame(talking, mouthElapsed) };
 }
 
 export function startSceneLoop(canvas, personaId, fps = 8) {

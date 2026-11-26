@@ -1,13 +1,13 @@
 // TADSDI app.js: entry point and screen routing.
 
 import { initSettings, howToAtStart, setHowToAtStart, loadSettings,
-  saveSettings } from './settings.js?v=36';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=36';
-import { initExport } from './export.js?v=36';
-import { loadProblems } from './problems.js?v=36';
-import { PERSONA_IDS, PERSONAS } from './personas.js?v=36';
-import { applyPersona, startSceneLoop, stopSceneLoop } from './persona-art.js?v=36';
-import { BlipVoice, setBlipVoice } from './audio.js?v=36';
+  saveSettings } from './settings.js?v=37';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=37';
+import { initExport } from './export.js?v=37';
+import { loadProblems } from './problems.js?v=37';
+import { PERSONA_IDS, PERSONAS } from './personas.js?v=37';
+import { applyPersona, startSceneLoop, stopSceneLoop, setTalking } from './persona-art.js?v=37';
+import { BlipVoice, setBlipVoice } from './audio.js?v=37';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -117,6 +117,9 @@ function initPersonaSelect() {
     settings.preferences.persona = select.value;
     saveSettings(settings);
   });
+  select.addEventListener('change', () => {
+    if (el('screen-menu').dataset.screenName === 'menu') restartPersonaPreview();
+  });
 }
 
 function savePreference(key, value) {
@@ -154,11 +157,51 @@ function onVoiceMuteClick() {
 
 // The portrait loop runs an interval; it follows the interview screen.
 // Entering the interview starts it, any other screen stops it, so no
-// timer outlives the screen.
+// timer outlives the screen. The menu runs the same loop on the preview
+// canvas and streams the persona's sample speech, so the candidate sees
+// the avatar, the background, and the way the persona talks before
+// starting. The preview drives the same talking flag as the interview
+// streams, so the mouth overlay flaps here too. It is silent: no
+// AudioContext exists on the menu.
+
+let previewTimer = null;
+
+function stopPersonaPreview() {
+  if (previewTimer) {
+    clearInterval(previewTimer);
+    previewTimer = null;
+  }
+  setTalking(false);
+}
+
+function restartPersonaPreview() {
+  stopPersonaPreview();
+  const personaId = el('persona-select').value || 'normal';
+  startSceneLoop(el('persona-preview-scene'), personaId);
+  const speechEl = el('persona-preview-speech');
+  const words = PERSONAS[personaId].sampleSpeech.split(' ');
+  let index = 0;
+  speechEl.textContent = '';
+  setTalking(true);
+  previewTimer = setInterval(() => {
+    if (index >= words.length) {
+      stopPersonaPreview();
+      return;
+    }
+    speechEl.textContent += (index > 0 ? ' ' : '') + words[index];
+    index += 1;
+    if (index >= words.length) stopPersonaPreview();
+  }, 70);
+}
+
 function onScreenChange(event) {
   if (event.detail === 'interview') {
+    stopPersonaPreview();
     startSceneLoop(el('persona-scene'), activePersona);
+  } else if (event.detail === 'menu') {
+    restartPersonaPreview();
   } else {
+    stopPersonaPreview();
     stopSceneLoop();
   }
 }
@@ -248,6 +291,9 @@ export function initApp() {
   syncProactive();
   initPersonaSelect();
   initVoiceMute();
+  // The boot-time showScreen('menu') dispatch fired before the screen
+  // listeners registered, so the preview starts here explicitly.
+  restartPersonaPreview();
   // loadProblems never rejects: an entry that fails to load is null.
   loadProblems().then((map) => {
     problems = map;

@@ -33,6 +33,7 @@ EXPECTED_EXPECTATION = {
                "officeStapler": True, "bustSkin": True},
     "mouth": {"atlas": True, "idleClosed": True, "talkCycle": True,
               "deterministic": True},
+    "speech": {"present": True, "distinct": True},
 }
 
 
@@ -47,9 +48,9 @@ def wait_port(port, timeout=10):
 
 
 UNITS = """
-  const personas = await import('./js/personas.js?v=36');
-  const audio = await import('./js/audio.js?v=36');
-  const assemble = await import('./js/prompts/assemble.js?v=36');
+  const personas = await import('./js/personas.js?v=37');
+  const audio = await import('./js/audio.js?v=37');
+  const assemble = await import('./js/prompts/assemble.js?v=37');
   const out = {};
 
   // ---- 1. the registry: five personas, every field present
@@ -135,7 +136,7 @@ UNITS = """
     out.prompt[id] = sys.includes(personas.PERSONAS[id].promptBlock);
   }
   // ---- 5. the 16-bit scenes: one animated painted scene per persona
-  const scenes = await import('./js/scenes.js?v=36');
+  const scenes = await import('./js/scenes.js?v=37');
   out.scenes = {};
   const ids = ['klingon', 'vulcan', 'pirate', 'cowboy', 'normal'];
   const record = () => {
@@ -187,7 +188,7 @@ UNITS = """
     scenes.getScene(id).skin) >= 30);
 
   // ---- 6. the mouth atlas: states, tags, and the pure frame picker
-  const mouth = await import('./js/mouth.js?v=36');
+  const mouth = await import('./js/mouth.js?v=37');
   out.mouth = {};
   out.mouth.atlas = ids.every((id, i) => {
     const p = mouth.MOUTH_META.personas[id];
@@ -205,6 +206,13 @@ UNITS = """
     && mouth.pickMouthFrame(true, 180) === 1;
   out.mouth.deterministic = [0, 95, 200, 777].every((ms) =>
     mouth.pickMouthFrame(true, ms) === mouth.pickMouthFrame(true, ms));
+
+  // ---- 7. the menu preview speech: one sample paragraph per persona
+  const reg = await import('./js/personas.js?v=37');
+  const texts = ids.map((id) => reg.PERSONAS[id].sampleSpeech || '');
+  out.speech = {};
+  out.speech.present = texts.every((t) => t.length >= 40 && t.length <= 400);
+  out.speech.distinct = new Set(texts).size === ids.length;
   return out;
 """
 

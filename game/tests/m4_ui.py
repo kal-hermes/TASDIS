@@ -102,6 +102,47 @@ def main():
                     print(f"  FAIL {name}: {detail}")
                     ok = False
 
+            # ---- A0. the menu preview: animated scene plus the persona's
+            # sample speech streaming with the mouth flapping
+            preview_pixels = page.evaluate("""() => {
+              const c = document.getElementById('persona-preview-scene');
+              const d = c.getContext('2d').getImageData(
+                0, 0, c.width, c.height).data;
+              let painted = 0;
+              for (let i = 3; i < d.length; i += 4) {
+                if (d[i] > 0) painted += 1;
+              }
+              return painted;
+            }""")
+            expect("menu preview scene painted", preview_pixels > 3000,
+                   preview_pixels)
+            sel = page.evaluate(
+                "() => document.getElementById('persona-select').value")
+            full = page.evaluate(
+                "id => import('./js/personas.js?v=37')"
+                ".then((m) => m.PERSONAS[id].sampleSpeech)", sel)
+            page.wait_for_function(
+                "t => document.getElementById('persona-preview-speech')"
+                ".textContent === t", arg=full, timeout=15000)
+            page.evaluate("() => { window.__mouth = null; }")
+            page.select_option("#persona-select", "vulcan")
+            page.wait_for_function(
+                "() => window.__mouth && window.__mouth.talking === true",
+                timeout=10000)
+            mid_state = page.evaluate("() => window.__mouth")
+            expect("preview mouth flaps while the sample streams",
+                   mid_state.get("frame", 0) != 0, mid_state)
+            vulcan_text = page.evaluate(
+                "id => import('./js/personas.js?v=37')"
+                ".then((m) => m.PERSONAS[id].sampleSpeech)", "vulcan")
+            page.wait_for_function(
+                "t => document.getElementById('persona-preview-speech')"
+                ".textContent === t", arg=vulcan_text, timeout=15000)
+            after_state = page.evaluate("() => window.__mouth")
+            expect("preview mouth closed after the sample",
+                   after_state.get("talking") is False
+                   and after_state.get("frame") == 0, after_state)
+
             # ---- A. the picker: five options, default normal, persists
             page.select_option("#persona-select", "klingon")
             page.click("#start-interview")

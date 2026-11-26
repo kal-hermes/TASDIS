@@ -35,7 +35,7 @@ export function loadMouthSheet(base = '.') {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
-      img.src = `${base}/img/mouth-states.png?v=36`;
+      img.src = `${base}/img/mouth-states.png?v=37`;
     });
   }
   return sheetPromise;

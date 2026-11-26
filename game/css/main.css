@@ -78,6 +78,33 @@ button:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--shad
   box-shadow: 3px 3px 0 var(--shadow);
 }
 
+#persona-preview {
+  margin: 0.75rem 0;
+  width: min(100%, 300px);
+}
+
+#persona-preview-scene {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  image-rendering: pixelated;
+  background: #000;
+  border: 3px solid var(--frame);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+#persona-preview-speech {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.6rem;
+  min-height: 3.2em;
+  width: 100%;
+  box-sizing: border-box;
+  background: #1d1826;
+  color: #f4e3c2;
+  border: 2px solid var(--frame);
+  font-size: 0.875rem;
+}
+
 #persona-name {
   position: absolute;
   left: 0.5rem;

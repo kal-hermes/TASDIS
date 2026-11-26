@@ -8,17 +8,17 @@ import {
   loadSession, saveSession, newSession,
   addMessage, addArtifact, coverStep, setCurrentStep, revealGuidance,
   countProbe,
-} from './state.js?v=36';
-import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=36';
-import { feedBlips } from './audio.js?v=36';
-import { setTalking } from './persona-art.js?v=36';
-import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=36';
-import { assembleContext, compressIfNeeded } from './context.js?v=36';
-import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=36';
-import { gradeSession, graderTokenEstimate } from './grader.js?v=36';
-import { parseTurn } from './turn-parse.js?v=36';
-import { renderLatex } from './render-latex.js?v=36';
-import { renderMermaid } from './render-mermaid.js?v=36';
+} from './state.js?v=37';
+import { STEPS, assembleBriefingMessages } from './prompts/assemble.js?v=37';
+import { feedBlips } from './audio.js?v=37';
+import { setTalking } from './persona-art.js?v=37';
+import { buildCheckMessages, parseCheckReply } from './prompts/check-prompt.js?v=37';
+import { assembleContext, compressIfNeeded } from './context.js?v=37';
+import { completeStream, complete, resetMockState, textContextTokens } from './providers.js?v=37';
+import { gradeSession, graderTokenEstimate } from './grader.js?v=37';
+import { parseTurn } from './turn-parse.js?v=37';
+import { renderLatex } from './render-latex.js?v=37';
+import { renderMermaid } from './render-mermaid.js?v=37';
 
 let session = null;
 let busy = false;
