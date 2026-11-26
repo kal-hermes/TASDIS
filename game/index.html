@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Totally Accurate System Design Interview Simulator</title>
   <link rel="stylesheet" href="js/vendor/katex.min.css?v=1">
-  <link rel="stylesheet" href="css/main.css?v=34">
+  <link rel="stylesheet" href="css/main.css?v=35">
 </head>
 <body data-screen="menu">
   <header>
@@ -99,8 +99,8 @@
           <button type="button" id="export-transcript">Export transcript (.md)</button>
         </aside>
         <div id="chat-pane">
-          <div id="chat-header">
-            <canvas id="persona-portrait" width="16" height="16"
+          <div id="scene-frame">
+            <canvas id="persona-scene" width="256" height="192"
               aria-hidden="true"></canvas>
             <span id="persona-name" aria-hidden="true"></span>
           </div>
@@ -194,10 +194,12 @@
            text and vision rows.</p>
         <p>The persona picker sits above the problem picker on the menu. Each
            persona is one interviewer character with its own speech style,
-           portrait, backdrop, and voice. The voice is a gibberish blip per
-           syllable, synthesized on the fly. No speech is recorded. The
-           Voice button in the sidebar turns the blips off. The choice and
-           the mute state persist in this browser.</p>
+           scene art, and voice. The scene above the chat shows the
+           interviewer over their own surroundings, with a small set piece
+           that repeats. The voice is a gibberish blip per syllable,
+           synthesized on the fly. No speech is recorded. The Voice button
+           in the sidebar turns the blips off. The choice and the mute
+           state persist in this browser.</p>
       </section>
 
       <section>
@@ -270,6 +272,6 @@
 
   <script src="js/vendor/katex.min.js?v=1"></script>
   <script src="js/vendor/mermaid.min.js?v=1"></script>
-  <script type="module" src="js/app.js?v=34"></script>
+  <script type="module" src="js/app.js?v=35"></script>
 </body>
 </html>

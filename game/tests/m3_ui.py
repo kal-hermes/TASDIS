@@ -80,8 +80,8 @@ def main():
 
             # ---- C. export: the pure function on a built session -------
             out = page.evaluate("""async (base) => {
-              const state = await import(base + 'js/state.js?v=34');
-              const exp = await import(base + 'js/export.js?v=34');
+              const state = await import(base + 'js/state.js?v=35');
+              const exp = await import(base + 'js/export.js?v=35');
               const problem = { id: 'url-shortener', title: 'URL Shortener',
                 vague_prompt: 'Design a URL shortening service like bit.ly.' };
               const s = state.newSession(problem, { helpMode: 'learning',
@@ -160,7 +160,7 @@ def main():
             # button for the rest of the session. Steps unmarked: the
             # candidate can still end.
             page.evaluate("""async ([base, key]) => {
-              const state = await import(base + 'js/state.js?v=34');
+              const state = await import(base + 'js/state.js?v=35');
               const problem = await (await fetch(base + 'js/problems/url-shortener.json')).json();
               const session = state.newSession(problem, { helpMode: 'learning' });
               state.addMessage(session, 'interviewer', 'Here is the problem. Over to you.');

@@ -14,9 +14,9 @@
 // narrative and lines for the ledger. Game code checks the shape and applies
 // it; nothing that the model returns is used as it arrives.
 
-import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=34';
-import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=34';
-import { extractJsonObject } from './json-reply.js?v=34';
+import { assembleInterviewerPrompt, STEPS } from './prompts/assemble.js?v=35';
+import { buildSummarizeMessages } from './prompts/summarize-prompt.js?v=35';
+import { extractJsonObject } from './json-reply.js?v=35';
 
 export const DEFAULT_CONTEXT_TOKENS = 32000;
 export const THRESHOLD = 0.6;

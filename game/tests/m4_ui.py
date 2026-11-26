@@ -111,17 +111,24 @@ def main():
                 f"key => JSON.parse(localStorage.getItem(key)).preferences", SETTINGS_KEY)
             expect("picker persists klingon", stored.get("persona") == "klingon", stored)
 
-            # ---- B. the portrait and the backdrop
+            # ---- B. the scene panel and the backdrop
             pixels = page.evaluate("""() => {
-              const c = document.getElementById('persona-portrait');
+              const c = document.getElementById('persona-scene');
               const ctx = c.getContext('2d');
               const d = ctx.getImageData(0, 0, c.width, c.height).data;
               let painted = 0;
-              for (let i = 3; i < d.length; i += 4) { if (d[i] > 0) painted += 1; }
-              return { painted, w: c.width, h: c.height };
+              const seen = new Set();
+              for (let i = 0; i < d.length; i += 4) {
+                if (d[i + 3] > 0) {
+                  painted += 1;
+                  seen.add(d[i] + ',' + d[i + 1] + ',' + d[i + 2]);
+                }
+              }
+              return { painted, w: c.width, h: c.height, colors: seen.size };
             }""")
-            expect("portrait painted", pixels["painted"] > 40, pixels)
-            expect("portrait 16x16", pixels["w"] == 16 and pixels["h"] == 16, pixels)
+            expect("scene painted", pixels["painted"] > 3000, pixels)
+            expect("scene 256x192", pixels["w"] == 256 and pixels["h"] == 192, pixels)
+            expect("scene detail colors", pixels["colors"] >= 24, pixels)
             name = page.text_content("#persona-name")
             expect("persona name shown", "Klingon" in (name or ""), name)
             bg_class = page.evaluate(
@@ -132,17 +139,77 @@ def main():
                 ".getPropertyValue('--accent').trim()")
             expect("accent variable", accent == "#d4a017", accent)
 
-            # ---- C. the idle bob: the frame toggles
+            # the scene panel is at least as tall as the text box
+            heights = page.evaluate("""() => {
+              const scene = document.getElementById('persona-scene')
+                .getBoundingClientRect();
+              const log = document.getElementById('chat-log')
+                .getBoundingClientRect();
+              return { scene: scene.height, log: log.height };
+            }""")
+            expect("scene taller than the text box",
+                   heights["scene"] >= heights["log"], heights)
+
+            # ---- B2. contrast and list bounds (owner playtest findings)
+            steps = page.evaluate("""() => {
+              const screen = document.getElementById('screen-interview')
+                .getBoundingClientRect();
+              const list = document.getElementById('step-tracker')
+                .getBoundingClientRect();
+              return { screenL: screen.left, listL: list.left };
+            }""")
+            expect("step numbers inside the screen",
+                   steps["listL"] >= steps["screenL"] - 1, steps)
+
+            contrast = page.evaluate("""() => {
+              const lum = (r, g, b) => {
+                const ch = (v) => {
+                  const s = v / 255;
+                  return s <= 0.04 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+                };
+                return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+              };
+              const parts = (css) => css.match(/[\\d.]+/g).slice(0, 3).map(Number);
+              const ratio = (a, b) => {
+                const la = lum(...parts(a));
+                const lb = lum(...parts(b));
+                return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+              };
+              const bubble = document.querySelector('.chat-message.interviewer');
+              const bubbleStyle = getComputedStyle(bubble);
+              const step = document.querySelector('#step-tracker li.current');
+              const stepStyle = getComputedStyle(step);
+              return {
+                bubbleInk: bubbleStyle.color,
+                bubbleBg: bubbleStyle.backgroundColor,
+                bubbleRatio: ratio(bubbleStyle.color, bubbleStyle.backgroundColor),
+                stepInk: stepStyle.color,
+                stepBg: stepStyle.backgroundColor,
+                stepRatio: ratio(stepStyle.color,
+                  stepStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+                    ? 'rgb(43, 15, 15)' : stepStyle.backgroundColor),
+              };
+            }""")
+            expect("bubble ink is cream", contrast["bubbleInk"]
+                   == "rgb(244, 227, 194)", contrast)
+            expect("bubble panel is dark", contrast["bubbleBg"]
+                   == "rgb(29, 24, 38)", contrast)
+            expect("bubble contrast ok", contrast["bubbleRatio"] >= 4.5, contrast)
+            expect("current step ink is gold", contrast["stepInk"]
+                   == "rgb(255, 217, 122)", contrast)
+            expect("current step contrast ok", contrast["stepRatio"] >= 4.5, contrast)
+
+            # ---- C. the scene animates: the pixels change over time
             frame1 = page.evaluate("""() => {
-              const c = document.getElementById('persona-portrait');
-              return c.getContext('2d').getImageData(0, 0, 16, 16).data.join(',');
+              const c = document.getElementById('persona-scene');
+              return c.getContext('2d').getImageData(0, 0, 256, 192).data.join(',');
             }""")
             page.wait_for_timeout(700)
             frame2 = page.evaluate("""() => {
-              const c = document.getElementById('persona-portrait');
-              return c.getContext('2d').getImageData(0, 0, 16, 16).data.join(',');
+              const c = document.getElementById('persona-scene');
+              return c.getContext('2d').getImageData(0, 0, 256, 192).data.join(',');
             }""")
-            expect("idle bob toggles", frame1 != frame2, "frames identical")
+            expect("scene animates", frame1 != frame2, "frames identical")
 
             # ---- D. the theme: pixel font, hard shadow, chunky border
             font_ok = page.evaluate(

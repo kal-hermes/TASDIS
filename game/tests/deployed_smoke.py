@@ -77,14 +77,15 @@ def main():
         persona = page.evaluate(
             "() => document.getElementById('screen-interview').className")
         assert "persona-klingon" in persona, persona
-        portrait = page.evaluate("""() => {
-          const c = document.getElementById('persona-portrait');
-          const d = c.getContext('2d').getImageData(0, 0, 16, 16).data;
+        scene = page.evaluate("""() => {
+          const c = document.getElementById('persona-scene');
+          const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
           let painted = 0;
-          for (let i = 3; i < d.length; i += 4) { if (d[i] > 0) painted += 1; }
-          return painted;
+          for (let i = 0; i < d.length; i += 4) { if (d[i + 3] > 0) painted += 1; }
+          return { painted, w: c.width, h: c.height };
         }""")
-        assert portrait > 40, f"the portrait never painted: {portrait}"
+        assert scene["w"] == 256 and scene["h"] == 192, scene
+        assert scene["painted"] > 3000, f"the scene never painted: {scene}"
         assert page.locator("#timer-hud").is_hidden(), "timer shows with the timer option off"
         d.send("About ten million writes per day, as a ballpark.")
         # The first hint of the mock script reveals hidden guidance item 2.

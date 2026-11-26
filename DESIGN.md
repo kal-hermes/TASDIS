@@ -480,10 +480,20 @@ No audio files, no recorded speech, and it works in every locale.
 
 The shipped shape (M4). `js/personas.js` holds the registry. The prompt
 block replaces the plain interviewer voice block in the system prompt.
-`normal` is that plain voice, so one source holds both. The sprite is a
-16x16 pixel map per persona. `js/persona-art.js` draws it onto a canvas
-portrait with a two-frame idle bob. The backdrop is a persona class on
-the interview screen. The voice follows this section's recipe in
+`normal` is that plain voice, so one source holds both. The art is a
+16-bit era scene: a 256x192 logical pixel canvas shown at 4:3, large
+enough to sit at least as tall as the interviewer text box. Each persona
+paints a detailed foreground bust over a persona-matching background in
+`js/scenes.js`. The scene animates on a deterministic frame schedule
+with one scripted set piece per persona. The Klingon gets a bridge
+explosion with a wall shake. The Vulcan gets spilled plomeek soup that
+sparks and gets wiped up. The rancher gets a farm cow with an
+occasional visible gas cloud. The pirate gets a storm with lightning,
+rain, and kraken tentacles gripping the bulwark. The tech interviewer
+gets a 90s cubicle office where a quiet colleague pats a red stapler.
+Paint is pure in the persona and frame number, so tests replay a frame
+through a recording context. The backdrop is a persona class on the
+interview screen. The voice follows this section's recipe in
 `js/audio.js`. The schedule is deterministic in text and persona. Latin
 words contribute their vowel-group count with a floor of one. CJK text
 contributes one blip per character. `BlipVoice` takes the AudioContext

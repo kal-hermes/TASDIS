@@ -1,27 +1,22 @@
-// Draws the persona sprite pixel maps onto the portrait canvas and applies
-// the persona backdrop class and palette variables to the interview screen.
-// The canvas is 16x16 game pixels, scaled up with image-rendering: pixelated
-// in CSS. The idle bob alternates the two frames on an interval.
+// Draws the persona interview scene onto the scene canvas and applies the
+// persona backdrop class and palette variables to the interview screen.
+// The canvas is a 256x192 logical pixel 4:3 scene, scaled up with
+// image-rendering: pixelated in CSS. The scene repaints at 8 frames per
+// second; the loop follows the interview screen (app.js stops it on every
+// other screen).
 
-import { getPersona } from './personas.js?v=34';
+import { getPersona } from './personas.js?v=35';
+import { getScene, SCENE_W, SCENE_H, CYCLE } from './scenes.js?v=35';
 
 let frameTimer = null;
 let frame = 0;
 
-export function drawSprite(canvas, personaId, frameIndex = 0) {
-  const persona = getPersona(personaId);
-  const map = persona.sprite[frameIndex % persona.sprite.length];
+export function drawScene(canvas, personaId, frameIndex = 0) {
+  const scene = getScene(personaId);
   const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let y = 0; y < map.length; y += 1) {
-    const row = map[y];
-    for (let x = 0; x < row.length; x += 1) {
-      const key = row[x];
-      if (key === '.') continue;
-      ctx.fillStyle = persona.palette[key] || persona.palette.uniform;
-      ctx.fillRect(x, y, 1, 1);
-    }
-  }
+  scene.paint(ctx, ((frameIndex % CYCLE) + CYCLE) % CYCLE);
 }
 
 export function applyPersona(screenEl, personaId) {
@@ -35,19 +30,21 @@ export function applyPersona(screenEl, personaId) {
   return persona;
 }
 
-export function startPortraitLoop(canvas, personaId, intervalMs = 600) {
-  stopPortraitLoop();
+export function startSceneLoop(canvas, personaId, fps = 8) {
+  stopSceneLoop();
   frame = 0;
-  drawSprite(canvas, personaId, frame);
+  drawScene(canvas, personaId, frame);
   frameTimer = setInterval(() => {
-    frame = (frame + 1) % 2;
-    drawSprite(canvas, personaId, frame);
-  }, intervalMs);
+    frame = (frame + 1) % CYCLE;
+    drawScene(canvas, personaId, frame);
+  }, Math.round(1000 / fps));
 }
 
-export function stopPortraitLoop() {
+export function stopSceneLoop() {
   if (frameTimer) {
     clearInterval(frameTimer);
     frameTimer = null;
   }
 }
+
+export { SCENE_W, SCENE_H };

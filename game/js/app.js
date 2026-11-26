@@ -1,13 +1,13 @@
 // TADSDI app.js: entry point and screen routing.
 
 import { initSettings, howToAtStart, setHowToAtStart, loadSettings,
-  saveSettings } from './settings.js?v=34';
-import { initEngine, startInterview, getEngineSession } from './engine.js?v=34';
-import { initExport } from './export.js?v=34';
-import { loadProblems } from './problems.js?v=34';
-import { PERSONA_IDS, PERSONAS } from './personas.js?v=34';
-import { applyPersona, startPortraitLoop, stopPortraitLoop } from './persona-art.js?v=34';
-import { BlipVoice, setBlipVoice } from './audio.js?v=34';
+  saveSettings } from './settings.js?v=35';
+import { initEngine, startInterview, getEngineSession } from './engine.js?v=35';
+import { initExport } from './export.js?v=35';
+import { loadProblems } from './problems.js?v=35';
+import { PERSONA_IDS, PERSONAS } from './personas.js?v=35';
+import { applyPersona, startSceneLoop, stopSceneLoop } from './persona-art.js?v=35';
+import { BlipVoice, setBlipVoice } from './audio.js?v=35';
 
 const SCREENS = ['menu', 'briefing', 'interview', 'grading', 'feedback'];
 
@@ -134,7 +134,7 @@ function setupPersonaStage(personaId) {
   const screenEl = el('screen-interview');
   const persona = applyPersona(screenEl, personaId);
   el('persona-name').textContent = persona.name;
-  startPortraitLoop(el('persona-portrait'), personaId);
+  startSceneLoop(el('persona-scene'), personaId);
   const muted = loadSettings().preferences.voiceMuted === true;
   el('voice-mute').textContent = muted ? 'Voice: off' : 'Voice: on';
   const Ctx = window.AudioContext;
@@ -157,9 +157,9 @@ function onVoiceMuteClick() {
 // timer outlives the screen.
 function onScreenChange(event) {
   if (event.detail === 'interview') {
-    startPortraitLoop(el('persona-portrait'), activePersona);
+    startSceneLoop(el('persona-scene'), activePersona);
   } else {
-    stopPortraitLoop();
+    stopSceneLoop();
   }
 }
 

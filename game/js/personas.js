@@ -1,104 +1,6 @@
 // The five interviewer personas (DESIGN.md section 11). Each carries the
-// prompt block, the palette, the voice timbre, the sprite frames, and the
-// backdrop id. The sprite maps are 16x16 pixel strings; '.' is transparent.
-// The second frame is the idle bob: the map shifted down one row.
-
-const bob = (map) => ['.'.repeat(map[0].length), ...map.slice(0, -1)];
-
-const KLINGON_MAP = [
-  '................',
-  '....hhhhhhhh....',
-  '...hhhhhhhhhh...',
-  '...hhhhhhhhhh...',
-  '...gkkkkkkkkg...',
-  '...kkkkkkkkkk...',
-  '...kekkkkkkek...',
-  '...kkkkkkkkkk...',
-  '...kkkkmmkkkk...',
-  '...kkkaaaakkk...',
-  '...kkkaaaakkk...',
-  '....uuaauuuu....',
-  '...uuuuuuuuuu...',
-  '..uuuuaauuuuu...',
-  '..kkuuuuuuukk...',
-  '................',
-];
-
-const VULCAN_MAP = [
-  '................',
-  '....hhhhhhhh....',
-  '..hhhhhhhhhhhh..',
-  '..hhhhhhhhhhhh..',
-  '.hhkkkkkkkkkkhh.',
-  'ekkkkkkkkkkkkke.',
-  '.kkkkkkkkkkkkk..',
-  '.kekkkkkkkkkek..',
-  '.kkkkkkkkkkkkk..',
-  '.kkkkkmmkkkkkk..',
-  '..kkkkkkkkkkk...',
-  '...uuuuuuuuu....',
-  '..uuuuuauuuuu...',
-  '..uuuuuuuuuuu...',
-  '..kkuuuuuuukk...',
-  '................',
-];
-
-const PIRATE_MAP = [
-  '................',
-  '...aaaaaaaaaa...',
-  '..aaaaaaaaaaaa..',
-  '.aaaaaaaaaaaaaa.',
-  '...kkkkkkkkkk...',
-  '...kekkkkpkek...',
-  '...kkkkkkkkkk...',
-  '...kkkkmmkkkk...',
-  '...kbbbaabbbk...',
-  '...kbbbaabbbk...',
-  '...kbbbbbbbbk...',
-  '....rrrrrrrr....',
-  '...rrrrrrrrrr...',
-  '..rrrraarrrrr...',
-  '..kkrrrrrrrrkk..',
-  '................',
-];
-
-const COWBOY_MAP = [
-  '................',
-  '....aaaaaaaa....',
-  '..aaaaaaaaaaaa..',
-  '.aaaaaaaaaaaaaa.',
-  '....kkkkkkkk....',
-  '...kekkkkkkek...',
-  '...kkkkkkkkkk...',
-  '...kkmmkkmkkk...',
-  '...kkkkkkkkkk...',
-  '...kkkmmmmkkk...',
-  '...kkkbbbbkkk...',
-  '....rrrrrrrr....',
-  '...rrraaaarrr...',
-  '..rrrrrrrrrrr...',
-  '..kkrrrrrrrrkk..',
-  '................',
-];
-
-const NORMAL_MAP = [
-  '................',
-  '....hhhhhhhh....',
-  '...hhhhhhhhhh...',
-  '...hhhhhhhhhh...',
-  '...kkkkkkkkkk...',
-  '...gggkggkggg...',
-  '...kekkkkkkek...',
-  '...kkkkkkkkkk...',
-  '...kkkkmmkkkk...',
-  '...kkkkkkkkkk...',
-  '....kkkkkkkk....',
-  '...uuuwuuuuuu...',
-  '..uuuuwuuuuuu...',
-  '..uuuwwwuuuuu...',
-  '..kkkuwwukkkk...',
-  '................',
-];
+// prompt block, the palette, the voice timbre, and the backdrop id. The
+// 16-bit scene art lives in scenes.js, keyed by the same ids.
 
 export const PERSONA_IDS = ['klingon', 'vulcan', 'pirate', 'cowboy', 'normal'];
 
@@ -114,7 +16,6 @@ exactly as the process block demands.`,
       eye: '#2b0f0f', uniform: '#6b1f1f', accent: '#d4a017', mouth: '#7a3020',
       ridge: '#a06a42', detail: '#3a2418' },
     timbre: { wave: 'sawtooth', minHz: 90, maxHz: 200 },
-    sprite: [KLINGON_MAP, bob(KLINGON_MAP)],
     background: 'bg-bridge',
   },
   vulcan: {
@@ -128,7 +29,6 @@ demands.`,
       eye: '#101c2e', uniform: '#1f2f4a', accent: '#8fb8d8', mouth: '#9a6a4a',
       ridge: '#c9987a', detail: '#1a1a1a' },
     timbre: { wave: 'sine', minHz: 160, maxHz: 320 },
-    sprite: [VULCAN_MAP, bob(VULCAN_MAP)],
     background: 'bg-space',
   },
   pirate: {
@@ -141,7 +41,6 @@ the candidate as deckhand until they earn better.`,
       eye: '#0e2233', uniform: '#7a2f22', accent: '#e0b23c', mouth: '#8a4030',
       ridge: '#c9987a', detail: '#3d2b1f' },
     timbre: { wave: 'square', minHz: 120, maxHz: 260 },
-    sprite: [PIRATE_MAP, bob(PIRATE_MAP)],
     background: 'bg-deck',
   },
   cowboy: {
@@ -155,7 +54,6 @@ process block demands.`,
       eye: '#2e2416', uniform: '#6a4a2a', accent: '#c98a3c', mouth: '#8a5030',
       ridge: '#c9987a', detail: '#4a3421' },
     timbre: { wave: 'triangle', minHz: 110, maxHz: 240 },
-    sprite: [COWBOY_MAP, bob(COWBOY_MAP)],
     background: 'bg-ranch',
   },
   normal: {
@@ -168,7 +66,6 @@ what the candidate actually said. You never lecture at length.`,
       eye: '#1e2430', uniform: '#3a4256', accent: '#7aa2f7', mouth: '#9a6a4a',
       ridge: '#d9a06e', detail: '#8a929e' },
     timbre: { wave: 'sine', minHz: 140, maxHz: 300 },
-    sprite: [NORMAL_MAP, bob(NORMAL_MAP)],
     background: 'bg-office',
   },
 };

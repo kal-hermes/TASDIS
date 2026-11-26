@@ -26,6 +26,11 @@ EXPECTED_EXPECTATION = {
               "count": True, "muted": 0},
     "prompt": {"klingon": True, "vulcan": True, "pirate": True,
                "cowboy": True, "normal": True},
+    "scenes": {"sceneIds": True, "detail": True, "colors": True,
+               "deterministic": True, "animated": True,
+               "klingonFlash": True, "vulcanSoup": True,
+               "cowboyPuff": True, "pirateFlash": True,
+               "officeStapler": True, "bustSkin": True},
 }
 
 
@@ -40,9 +45,9 @@ def wait_port(port, timeout=10):
 
 
 UNITS = """
-  const personas = await import('./js/personas.js?v=34');
-  const audio = await import('./js/audio.js?v=34');
-  const assemble = await import('./js/prompts/assemble.js?v=34');
+  const personas = await import('./js/personas.js?v=35');
+  const audio = await import('./js/audio.js?v=35');
+  const assemble = await import('./js/prompts/assemble.js?v=35');
   const out = {};
 
   // ---- 1. the registry: five personas, every field present
@@ -56,8 +61,6 @@ UNITS = """
       && p.palette && Object.keys(p.palette).length >= 3
       && p.timbre && typeof p.timbre.wave === 'string'
       && p.timbre.minHz > 0 && p.timbre.maxHz > p.timbre.minHz
-      && Array.isArray(p.sprite) && p.sprite.length >= 2
-      && p.sprite.every((f) => Array.isArray(f) && f.length > 0)
       && typeof p.background === 'string' && p.background.length > 0;
   });
 
@@ -129,6 +132,57 @@ UNITS = """
     const sys = msgs[0].content;
     out.prompt[id] = sys.includes(personas.PERSONAS[id].promptBlock);
   }
+  // ---- 5. the 16-bit scenes: one animated painted scene per persona
+  const scenes = await import('./js/scenes.js?v=35');
+  out.scenes = {};
+  const ids = ['klingon', 'vulcan', 'pirate', 'cowboy', 'normal'];
+  const record = () => {
+    const ops = [];
+    const fake = {
+      fillStyle: '',
+      fillRect(x, y, w, h) { ops.push([this.fillStyle, x, y, w, h]); },
+    };
+    return { fake, ops };
+  };
+  const paintOps = (id, frame) => {
+    const r = record();
+    scenes.getScene(id).paint(r.fake, frame);
+    return r.ops;
+  };
+  const area = (ops, color) => ops
+    .filter((op) => op[0] === color)
+    .reduce((sum, op) => sum + op[3] * op[4], 0);
+  const hasColor = (ops, color) => ops.some((op) => op[0] === color);
+  out.scenes.sceneIds = ids.every((id) => {
+    const s = scenes.getScene(id);
+    return s && typeof s.paint === 'function' && s.palette;
+  });
+  const zero = {};
+  for (const id of ids) zero[id] = paintOps(id, 0);
+  out.scenes.detail = ids.every((id) => zero[id]
+    .reduce((sum, op) => sum + op[3] * op[4], 0) >= 18000);
+  out.scenes.colors = ids.every((id) => new Set(zero[id]
+    .map((op) => op[0])).size >= 8);
+  out.scenes.deterministic = ids.every((id) => {
+    const a = paintOps(id, 97);
+    const b = paintOps(id, 97);
+    return JSON.stringify(a) === JSON.stringify(b);
+  });
+  out.scenes.animated = ids.every((id) => {
+    const f97 = paintOps(id, 97);
+    return JSON.stringify(zero[id]) !== JSON.stringify(f97);
+  });
+  out.scenes.klingonFlash = hasColor(paintOps('klingon', 74), '#ffd75e')
+    && !hasColor(zero.klingon, '#ffd75e');
+  out.scenes.vulcanSoup = hasColor(paintOps('vulcan', 90), '#7a4a21')
+    && !hasColor(zero.vulcan, '#7a4a21');
+  out.scenes.cowboyPuff = hasColor(paintOps('cowboy', 120), '#9fd26a')
+    && !hasColor(zero.cowboy, '#9fd26a');
+  out.scenes.pirateFlash = area(paintOps('pirate', 82), '#e8f2ff') >= 8000
+    && area(zero.pirate, '#e8f2ff') === 0;
+  out.scenes.officeStapler = hasColor(zero.normal, '#c81e1e');
+  out.scenes.bustSkin = ids.every((id) => area(zero[id],
+    scenes.getScene(id).skin) >= 30);
   return out;
 """
 
