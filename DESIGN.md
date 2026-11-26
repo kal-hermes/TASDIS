@@ -517,9 +517,11 @@ The menu shows a persona preview. The same scene loop runs on a small
 canvas. It paints the selected persona's background and avatar. One
 sample paragraph per persona streams word by word beside the canvas.
 The preview drives the same talking flag as the interview streams, so
-the mouth flaps there too. It is silent: no AudioContext exists on the
-menu. The preview stops on any screen change, so no timer outlives the
-menu.
+the mouth flaps there too. A Preview voice button replays the sample
+with the persona's blips. The blips ride an AudioContext created on the
+click. A browser starts audio only on a gesture, and the click is one.
+The menu stays silent without a click. The preview stops on any screen
+change, so no timer outlives the menu.
 
 ## 12. Internationalization (phase 2)
 
